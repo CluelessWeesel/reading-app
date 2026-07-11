@@ -3,6 +3,23 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Warm "library" theme -- used by /library today; kept as named tokens
+     so a future dark mode only needs to change the values below, not the
+     components that use them. */
+  --paper: #f7f1e3;
+  --card: #ffffff;
+  --ink: #2b2118;
+  --ink-muted: #6b5d4f;
+  --ink-faint: #8a7a63;
+  --hairline: #e2d6bf;
+  --hover-tint: rgb(0 0 0 / 0.03);
+  --accent: #f59e0b;
+  --star-empty: #ddd0b8;
+  /* Deliberately not overridden for dark mode: accent stays a light/mid amber
+     in both themes, so text sitting on top of it needs a fixed dark color
+     rather than the ink token (which flips to a light color in dark mode). */
+  --on-accent: #2b1c0e;
 }
 
 @theme inline {
@@ -10,12 +27,33 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-hairline: var(--hairline);
+  --color-hover: var(--hover-tint);
+  --color-accent: var(--accent);
+  --color-star-empty: var(--star-empty);
+  --color-on-accent: var(--on-accent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    --paper: #1c1512;
+    --card: #2a2119;
+    --ink: #f0e6d6;
+    --ink-muted: #b8a892;
+    --ink-faint: #8f7f68;
+    --hairline: #3a2f22;
+    --hover-tint: rgb(255 255 255 / 0.04);
+    --accent: #fbbf24;
+    --star-empty: #4a3f2f;
   }
 }
 

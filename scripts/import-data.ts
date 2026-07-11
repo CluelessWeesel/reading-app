@@ -14,6 +14,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Pool, type PoolClient } from "pg";
 import * as XLSX from "xlsx";
+import { normalizeTitle } from "./lib/normalizeTitle";
 
 config({ path: path.join(process.cwd(), ".env.local") });
 
@@ -69,17 +70,6 @@ function toDateStr(v: unknown): string | null {
 function toText(v: unknown): string | null {
   const n = nullify(v);
   return n === null ? null : String(n);
-}
-
-// Normalizes a title for matching: trims, lowercases, drops a trailing
-// period, collapses whitespace, and treats a leading "the " as optional.
-function normalizeTitle(t: string): string {
-  return t
-    .trim()
-    .toLowerCase()
-    .replace(/\.$/, "")
-    .replace(/\s+/g, " ")
-    .replace(/^the\s+/, "");
 }
 
 function sheetRows<T = Record<string, unknown>>(
