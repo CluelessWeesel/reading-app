@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { logForwardProgress } from "@/lib/logPosition";
 
 const FORMAT_TYPES = new Set(["audio", "physical", "ebook"]);
 
@@ -36,12 +37,45 @@ export async function PATCH(
   }
 
   if (position !== undefined) {
-    const { rowCount } = await pool.query(
-      `update current_books set position = $1 where book_id = $2`,
-      [position, bookIdNum]
-    );
-    if (rowCount === 0) {
-      return NextResponse.json({ error: "Not currently reading this book." }, { status: 404 });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const { rows: cbRows } = await client.query(
+        `select cb.position::float8 as position, b.format_type, b.page_count
+         from current_books cb join books b on b.book_id = cb.book_id
+         where cb.book_id = $1
+         for update`,
+        [bookIdNum]
+      );
+      if (cbRows.length === 0) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ error: "Not currently reading this book." }, { status: 404 });
+      }
+      const { position: currentPosition, format_type: formatType, page_count: pageCount } = cbRows[0];
+
+      if (position > currentPosition) {
+        // Forward progress -- log it, same as the nightly /log flow, so
+        // quick-updating your page here shows up in the log's Edit tab too.
+        const result = await logForwardProgress(client, bookIdNum, position, currentPosition, formatType, pageCount);
+        if (!result.ok) {
+          await client.query("ROLLBACK");
+          return NextResponse.json({ error: result.error }, { status: result.status });
+        }
+      } else if (position < currentPosition) {
+        // Backward correction (fixing a mistaken position) -- position is
+        // independently authoritative, not derived from daily_reading, so
+        // this doesn't touch the log. See app/api/log/[id]/route.ts.
+        await client.query(`update current_books set position = $1 where book_id = $2`, [position, bookIdNum]);
+      }
+
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error(err);
+      return NextResponse.json({ error: "Failed to update position." }, { status: 500 });
+    } finally {
+      client.release();
     }
   }
   if (format_type !== undefined) {

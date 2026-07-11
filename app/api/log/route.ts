@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { computePagesDelta } from "@/app/shared/positionMath";
+import { logForwardProgress } from "@/lib/logPosition";
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
@@ -56,40 +56,22 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // If this book was already logged today, back out today's already-
-      // recorded pages to find the position baseline as of yesterday --
-      // otherwise re-logging the same book twice today would double-count.
-      const { rows: todayRows } = await client.query(
-        `select pages from daily_reading where date = current_date and book_id = $1`,
-        [bookId]
+      const result = await logForwardProgress(
+        client,
+        bookId,
+        newPosition,
+        currentPosition,
+        formatType,
+        pageCount
       );
-      const alreadyLoggedToday = todayRows[0]?.pages ?? 0;
-      const baseline = currentPosition - alreadyLoggedToday;
-
-      const delta = computePagesDelta(newPosition, baseline, formatType, pageCount);
-      if (delta === null) {
+      if (!result.ok) {
         await client.query("ROLLBACK");
-        results.push({
-          book_id: bookId,
-          ok: false,
-          error: "This audio book has no page count set, so pages can't be computed from percent yet.",
-        });
+        results.push({ book_id: bookId, ok: false, error: result.error });
         continue;
       }
 
-      await client.query(
-        `insert into daily_reading (date, book_id, pages)
-         values (current_date, $1, $2)
-         on conflict (date, book_id) do update set pages = excluded.pages`,
-        [bookId, delta]
-      );
-      await client.query(`update current_books set position = $1 where book_id = $2`, [
-        newPosition,
-        bookId,
-      ]);
-
       await client.query("COMMIT");
-      results.push({ book_id: bookId, ok: true, delta });
+      results.push({ book_id: bookId, ok: true, delta: result.delta });
     } catch (err) {
       await client.query("ROLLBACK");
       console.error(err);
