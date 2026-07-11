@@ -1,20 +1,29 @@
-import { Cover } from "./Cover";
-import { fraunces } from "./fonts";
+import { Cover } from "../shared/Cover";
+import { fraunces } from "../shared/fonts";
 import { StarRating } from "./StarRating";
-import type { Book } from "./types";
+import type { Book } from "../shared/bookTypes";
 
 export function BookCard({
   book,
   onCoverChange,
+  onEditRequest,
   sortValueLabel,
 }: {
   book: Book;
   onCoverChange: (bookId: number, coverUrl: string | null) => void;
+  onEditRequest: (bookId: number) => void;
   sortValueLabel?: string | null;
 }) {
   return (
     <div className="group flex flex-col gap-2 rounded-xl p-2 transition hover:-translate-y-0.5 hover:bg-hover">
-      <Cover book={book} onCoverChange={onCoverChange} />
+      <Cover
+        id={book.book_id}
+        title={book.title}
+        coverUrl={book.cover_url}
+        onCoverChange={onCoverChange}
+        apiPath={`/api/books/${book.book_id}/cover`}
+        roundedClassName="rounded-xl"
+      />
 
       {/* Fixed total height (not a per-line min-height guess) with the
           footer pinned to the bottom via mt-auto -- guarantees every card's
@@ -40,6 +49,14 @@ export function BookCard({
           )}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => onEditRequest(book.book_id)}
+        className="self-start px-0.5 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+      >
+        Edit
+      </button>
     </div>
   );
 }

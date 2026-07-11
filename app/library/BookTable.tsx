@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Cover } from "./Cover";
-import { fraunces } from "./fonts";
-import { FORMAT_LABELS } from "./formatLabels";
-import { titleSortKey } from "./titleSortKey";
-import type { Book } from "./types";
+import { Cover } from "../shared/Cover";
+import { fraunces } from "../shared/fonts";
+import { FORMAT_LABELS } from "../shared/formatLabels";
+import { titleSortKey } from "../shared/titleSortKey";
+import type { Book } from "../shared/bookTypes";
 
 type EnrichedBook = Book & {
   wordsPerPage: number | null;
@@ -20,7 +20,9 @@ type EnrichedBook = Book & {
 // columns show "--" until it's backfilled by hand.
 function enrich(book: Book): EnrichedBook {
   const wordsPerPage =
-    book.word_count != null && book.page_count > 0 ? book.word_count / book.page_count : null;
+    book.word_count != null && book.page_count != null && book.page_count > 0
+      ? book.word_count / book.page_count
+      : null;
 
   let readingDays: number | null = null;
   if (book.date_started && book.date_finished) {
@@ -30,7 +32,7 @@ function enrich(book: Book): EnrichedBook {
     readingDays = days > 0 ? days : null;
   }
 
-  const pagesPerDay = readingDays ? book.page_count / readingDays : null;
+  const pagesPerDay = readingDays && book.page_count != null ? book.page_count / readingDays : null;
   const wordsPerDay = readingDays && book.word_count != null ? book.word_count / readingDays : null;
 
   return { ...book, wordsPerPage, readingDays, pagesPerDay, wordsPerDay };
@@ -91,8 +93,8 @@ const COLUMNS: Column[] = [
     key: "author",
     label: "Author",
     maxWidthClass: "max-w-[130px]",
-    getValue: (b) => b.author,
-    compare: (a, b) => a.author.localeCompare(b.author),
+    getValue: (b) => b.author ?? "--",
+    compare: (a, b) => (a.author ?? "").localeCompare(b.author ?? ""),
   },
   {
     key: "series",
@@ -105,22 +107,22 @@ const COLUMNS: Column[] = [
     key: "genre",
     label: "Genre",
     maxWidthClass: "max-w-[100px]",
-    getValue: (b) => b.genre,
-    compare: (a, b) => a.genre.localeCompare(b.genre),
+    getValue: (b) => b.genre ?? "--",
+    compare: (a, b) => (a.genre ?? "").localeCompare(b.genre ?? ""),
   },
   {
     key: "format_type",
     label: "Format",
     maxWidthClass: "max-w-[90px]",
-    getValue: (b) => FORMAT_LABELS[b.format_type] ?? b.format_type,
-    compare: (a, b) => a.format_type.localeCompare(b.format_type),
+    getValue: (b) => (b.format_type ? FORMAT_LABELS[b.format_type] ?? b.format_type : "--"),
+    compare: (a, b) => (a.format_type ?? "").localeCompare(b.format_type ?? ""),
   },
   {
     key: "year_read",
     label: "Year Read",
     align: "right",
-    getValue: (b) => String(b.year_read),
-    compare: (a, b) => a.year_read - b.year_read,
+    getValue: (b) => (b.year_read != null ? String(b.year_read) : "--"),
+    compare: numCompare((b) => b.year_read),
   },
   {
     key: "year_released",
@@ -140,8 +142,8 @@ const COLUMNS: Column[] = [
     key: "page_count",
     label: "Pages",
     align: "right",
-    getValue: (b) => String(b.page_count),
-    compare: (a, b) => a.page_count - b.page_count,
+    getValue: (b) => (b.page_count != null ? String(b.page_count) : "--"),
+    compare: numCompare((b) => b.page_count),
   },
   {
     key: "word_count",
@@ -187,9 +189,11 @@ type SortState = { key: ColumnKey; direction: "asc" | "desc" } | null;
 export function BookTable({
   books,
   onCoverChange,
+  onEditRequest,
 }: {
   books: Book[];
   onCoverChange: (bookId: number, coverUrl: string | null) => void;
+  onEditRequest: (bookId: number) => void;
 }) {
   const [sort, setSort] = useState<SortState>(null);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
@@ -259,6 +263,9 @@ export function BookTable({
               <th scope="col" className="px-2 py-1.5">
                 <span className="sr-only">Cover</span>
               </th>
+              <th scope="col" className="px-2 py-1.5">
+                <span className="sr-only">Edit</span>
+              </th>
               {shownColumns.map((col) => {
                 const active = sort?.key === col.key;
                 return (
@@ -286,7 +293,24 @@ export function BookTable({
             {rows.map((book) => (
               <tr key={book.book_id} className="border-b border-hairline last:border-0 hover:bg-hover">
                 <td className="px-2 py-1.5">
-                  <Cover book={book} onCoverChange={onCoverChange} className="aspect-[2/3] w-8" initialClassName="text-xs" />
+                  <Cover
+                    id={book.book_id}
+                    title={book.title}
+                    coverUrl={book.cover_url}
+                    onCoverChange={onCoverChange}
+                    apiPath={`/api/books/${book.book_id}/cover`}
+                    className="aspect-[2/3] w-8"
+                    initialClassName="text-xs"
+                  />
+                </td>
+                <td className="px-2 py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onEditRequest(book.book_id)}
+                    className="whitespace-nowrap text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                  >
+                    Edit
+                  </button>
                 </td>
                 {shownColumns.map((col) => {
                   const value = col.getValue(book);

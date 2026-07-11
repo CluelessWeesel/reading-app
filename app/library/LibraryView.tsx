@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookCard } from "./BookCard";
 import { BookTable } from "./BookTable";
-import { FORMAT_LABELS } from "./formatLabels";
-import { fraunces } from "./fonts";
-import { titleSortKey } from "./titleSortKey";
-import type { Book } from "./types";
+import { EditBookModal } from "../shared/EditBookModal";
+import { FORMAT_LABELS } from "../shared/formatLabels";
+import { CurrentlyReadingPanel } from "../shared/CurrentlyReadingPanel";
+import { fraunces } from "../shared/fonts";
+import { selectClass, labelClass } from "../shared/formControls";
+import { StartBookModal } from "../shared/StartBookModal";
+import { titleSortKey } from "../shared/titleSortKey";
+import type { Book } from "../shared/bookTypes";
 
 const SORTS = {
   score: {
@@ -15,7 +19,7 @@ const SORTS = {
   },
   year_read: {
     label: "Year read (newest)",
-    compare: (a: Book, b: Book) => b.year_read - a.year_read,
+    compare: (a: Book, b: Book) => (b.year_read ?? -Infinity) - (a.year_read ?? -Infinity),
   },
   title: {
     label: "Title (A–Z)",
@@ -23,7 +27,7 @@ const SORTS = {
   },
   page_count: {
     label: "Pages (most)",
-    compare: (a: Book, b: Book) => b.page_count - a.page_count,
+    compare: (a: Book, b: Book) => (b.page_count ?? -Infinity) - (a.page_count ?? -Infinity),
   },
   year_released: {
     label: "Publication year (newest)",
@@ -43,14 +47,6 @@ type SortKey = keyof typeof SORTS;
 type ViewMode = "card" | "grid";
 
 const ALL = "__all__";
-
-function selectClass() {
-  return "rounded-full border border-hairline bg-card/70 px-3 py-1.5 text-sm text-ink shadow-sm outline-none transition focus:ring-2 focus:ring-accent/40";
-}
-
-function labelClass() {
-  return "text-[10px] font-medium uppercase tracking-wide text-ink-faint";
-}
 
 // Card view has a fixed set of always-visible fields (year read, stars), so
 // sorting by anything else needs its value shown explicitly -- otherwise
@@ -74,7 +70,13 @@ function sortValueLabel(book: Book, key: SortKey): string | null {
   }
 }
 
-export function LibraryView({ books: initialBooks }: { books: Book[] }) {
+export function LibraryView({
+  books: initialBooks,
+  allGenres,
+}: {
+  books: Book[];
+  allGenres: string[];
+}) {
   const [books, setBooks] = useState(initialBooks);
   const [genre, setGenre] = useState(ALL);
   const [format, setFormat] = useState(ALL);
@@ -84,17 +86,26 @@ export function LibraryView({ books: initialBooks }: { books: Book[] }) {
   const [missingCoversOnly, setMissingCoversOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("year_read");
   const [view, setView] = useState<ViewMode>("card");
+  const [editingBookId, setEditingBookId] = useState<number | null>(null);
+  const [showStartBook, setShowStartBook] = useState(false);
 
   const genres = useMemo(
-    () => Array.from(new Set(books.map((b) => b.genre))).sort(),
+    () =>
+      Array.from(new Set(books.map((b) => b.genre).filter((g): g is string => g != null))).sort(),
     [books]
   );
   const formats = useMemo(
-    () => Array.from(new Set(books.map((b) => b.format_type))).sort(),
+    () =>
+      Array.from(
+        new Set(books.map((b) => b.format_type).filter((f): f is string => f != null))
+      ).sort(),
     [books]
   );
   const years = useMemo(
-    () => Array.from(new Set(books.map((b) => b.year_read))).sort((a, b) => b - a),
+    () =>
+      Array.from(
+        new Set(books.map((b) => b.year_read).filter((y): y is number => y != null))
+      ).sort((a, b) => b - a),
     [books]
   );
   const yearsPublished = useMemo(
@@ -154,6 +165,37 @@ export function LibraryView({ books: initialBooks }: { books: Book[] }) {
     setBooks((prev) => prev.map((b) => (b.book_id === bookId ? { ...b, cover_url: coverUrl } : b)));
   }
 
+  function handleBookSaved(updated: Book) {
+    setBooks((prev) => prev.map((b) => (b.book_id === updated.book_id ? updated : b)));
+    setEditingBookId(null);
+  }
+
+  function handleBookDeleted(bookId: number) {
+    setBooks((prev) => prev.filter((b) => b.book_id !== bookId));
+    setEditingBookId(null);
+  }
+
+  const editingBook = books.find((b) => b.book_id === editingBookId) ?? null;
+
+  // A book finished via the CurrentlyReadingPanel embedded on this page never
+  // came from the server-rendered initialBooks (it was status='reading' at
+  // load time, excluded by the library query) -- so it has to be merged in
+  // here directly rather than relying on a re-fetch.
+  useEffect(() => {
+    function handleFinished(e: Event) {
+      const finished = (e as CustomEvent<Book>).detail;
+      if (!finished) return;
+      setBooks((prev) => {
+        const exists = prev.some((b) => b.book_id === finished.book_id);
+        return exists
+          ? prev.map((b) => (b.book_id === finished.book_id ? finished : b))
+          : [...prev, finished];
+      });
+    }
+    window.addEventListener("book:finished", handleFinished);
+    return () => window.removeEventListener("book:finished", handleFinished);
+  }, []);
+
   return (
     <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-6xl">
@@ -167,29 +209,41 @@ export function LibraryView({ books: initialBooks }: { books: Book[] }) {
             </p>
           </div>
 
-          <div className="flex gap-1 rounded-full border border-hairline bg-card/70 p-1 shadow-sm">
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setView("card")}
-              aria-pressed={view === "card"}
-              className={`rounded-full px-3 py-1 text-sm transition ${
-                view === "card" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
-              }`}
+              onClick={() => setShowStartBook(true)}
+              className="rounded-full bg-accent px-4 py-1.5 text-sm text-on-accent shadow-sm transition hover:brightness-95"
             >
-              Card
+              Start a book
             </button>
-            <button
-              type="button"
-              onClick={() => setView("grid")}
-              aria-pressed={view === "grid"}
-              className={`rounded-full px-3 py-1 text-sm transition ${
-                view === "grid" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              Grid
-            </button>
+
+            <div className="flex gap-1 rounded-full border border-hairline bg-card/70 p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setView("card")}
+                aria-pressed={view === "card"}
+                className={`rounded-full px-3 py-1 text-sm transition ${
+                  view === "card" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                Card
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("grid")}
+                aria-pressed={view === "grid"}
+                className={`rounded-full px-3 py-1 text-sm transition ${
+                  view === "grid" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                Grid
+              </button>
+            </div>
           </div>
         </header>
+
+        <CurrentlyReadingPanel />
 
         <div className="sticky top-0 z-10 -mx-4 mb-8 border-b border-hairline bg-paper/90 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
           <div className="flex flex-wrap items-end gap-4">
@@ -344,14 +398,33 @@ export function LibraryView({ books: initialBooks }: { books: Book[] }) {
                 key={book.book_id}
                 book={book}
                 onCoverChange={handleCoverChange}
+                onEditRequest={setEditingBookId}
                 sortValueLabel={sortValueLabel(book, sortKey)}
               />
             ))}
           </div>
         ) : (
-          <BookTable books={filtered} onCoverChange={handleCoverChange} />
+          <BookTable books={filtered} onCoverChange={handleCoverChange} onEditRequest={setEditingBookId} />
         )}
       </div>
+
+      {editingBook && (
+        <EditBookModal
+          book={editingBook}
+          allGenres={allGenres}
+          seriesOptions={seriesList}
+          onClose={() => setEditingBookId(null)}
+          onSaved={handleBookSaved}
+          onDeleted={handleBookDeleted}
+        />
+      )}
+
+      {showStartBook && (
+        <StartBookModal
+          onClose={() => setShowStartBook(false)}
+          onStarted={() => setShowStartBook(false)}
+        />
+      )}
     </div>
   );
 }
