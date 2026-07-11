@@ -9,11 +9,13 @@
 //
 // Usage: npm run import:data
 
-import "dotenv/config";
+import { config } from "dotenv";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import * as XLSX from "xlsx";
+
+config({ path: path.join(process.cwd(), ".env.local") });
 
 const XLSX_PATH = path.join(process.cwd(), "data", "reading_data_gold.xlsx");
 
@@ -23,7 +25,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10_000,
+});
 
 // ---- helpers -----------------------------------------------------------
 
@@ -85,6 +91,38 @@ function sheetRows<T = Record<string, unknown>>(
   return XLSX.utils.sheet_to_json<T>(sheet, { defval: null });
 }
 
+// Inserts all `rows` into `table` as multi-row INSERT statements, chunked
+// to stay well under Postgres's ~65535 bound-parameter limit per query.
+// This is what keeps the import to a handful of network round trips
+// instead of one per row (which is what made the first version of this
+// script look like it had hung).
+async function batchInsert(
+  client: PoolClient,
+  table: string,
+  columns: string[],
+  rows: unknown[][]
+): Promise<void> {
+  if (rows.length === 0) return;
+  const chunkSize = Math.max(1, Math.floor(5000 / columns.length));
+
+  for (let start = 0; start < rows.length; start += chunkSize) {
+    const chunk = rows.slice(start, start + chunkSize);
+    const values: unknown[] = [];
+    const tuples: string[] = [];
+
+    for (const row of chunk) {
+      const placeholders = row.map((_, i) => `$${values.length + i + 1}`);
+      tuples.push(`(${placeholders.join(",")})`);
+      values.push(...row);
+    }
+
+    await client.query(
+      `INSERT INTO ${table} (${columns.join(",")}) VALUES ${tuples.join(",")}`,
+      values
+    );
+  }
+}
+
 // ---- main ---------------------------------------------------------------
 
 async function main() {
@@ -115,7 +153,7 @@ async function main() {
   try {
     await client.query("BEGIN");
 
-    // Delete children before parents.
+    console.log("Clearing existing rows...");
     await client.query("DELETE FROM book_rankings");
     await client.query("DELETE FROM rating_templates");
     await client.query("DELETE FROM books");
@@ -129,75 +167,81 @@ async function main() {
     await client.query("DELETE FROM genres");
     await client.query("DELETE FROM rating_categories");
 
-    // Insert parents before children.
-    for (const r of ratingCategories) {
-      await client.query(
-        `INSERT INTO rating_categories (category, scope) VALUES ($1, $2)`,
-        [toText(r.category), toText(r.scope)]
-      );
-    }
+    console.log(`Inserting rating_categories (${ratingCategories.length})...`);
+    await batchInsert(
+      client,
+      "rating_categories",
+      ["category", "scope"],
+      ratingCategories.map((r) => [toText(r.category), toText(r.scope)])
+    );
 
-    for (const r of genres) {
-      await client.query(
-        `INSERT INTO genres (genre, template) VALUES ($1, $2)`,
-        [toText(r.genre), toText(r.template)]
-      );
-    }
+    console.log(`Inserting genres (${genres.length})...`);
+    await batchInsert(
+      client,
+      "genres",
+      ["genre", "template"],
+      genres.map((r) => [toText(r.genre), toText(r.template)])
+    );
 
-    for (const r of ratingTemplates) {
-      await client.query(
-        `INSERT INTO rating_templates (template, category) VALUES ($1, $2)`,
-        [toText(r.template), toText(r.category)]
-      );
-    }
+    console.log(`Inserting rating_templates (${ratingTemplates.length})...`);
+    await batchInsert(
+      client,
+      "rating_templates",
+      ["template", "category"],
+      ratingTemplates.map((r) => [toText(r.template), toText(r.category)])
+    );
 
-    for (const r of series) {
-      await client.query(
-        `INSERT INTO series (series, parent_series) VALUES ($1, $2)`,
-        [toText(r.series), toText(r.parent_series)]
-      );
-    }
+    console.log(`Inserting series (${series.length})...`);
+    await batchInsert(
+      client,
+      "series",
+      ["series", "parent_series"],
+      series.map((r) => [toText(r.series), toText(r.parent_series)])
+    );
 
-    for (const r of books) {
-      await client.query(
-        `INSERT INTO books (
-           book_id, title, author, series, series_number, genre, year_released,
-           year_read, score, format_raw, word_count, page_count, format_type,
-           narrator, reread, date_started, date_finished, isbn, status
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
-        [
-          toInt(r.book_id),
-          toText(r.title),
-          toText(r.author),
-          toText(r.series),
-          toFloat(r.series_number),
-          toText(r.genre),
-          toInt(r.year_released),
-          toInt(r.year_read),
-          toFloat(r.score),
-          toText(r.format_raw),
-          toFloat(r.word_count),
-          toInt(r.page_count),
-          toText(r.format_type),
-          toText(r.narrator),
-          toBool(r.reread),
-          toDateStr(r.date_started),
-          toDateStr(r.date_finished),
-          toText(r.isbn),
-          toText(r.status),
-        ]
-      );
-    }
+    console.log(`Inserting books (${books.length})...`);
+    await batchInsert(
+      client,
+      "books",
+      [
+        "book_id", "title", "author", "series", "series_number", "genre",
+        "year_released", "year_read", "score", "format_raw", "word_count",
+        "page_count", "format_type", "narrator", "reread", "date_started",
+        "date_finished", "isbn", "status",
+      ],
+      books.map((r) => [
+        toInt(r.book_id),
+        toText(r.title),
+        toText(r.author),
+        toText(r.series),
+        toFloat(r.series_number),
+        toText(r.genre),
+        toInt(r.year_released),
+        toInt(r.year_read),
+        toFloat(r.score),
+        toText(r.format_raw),
+        toFloat(r.word_count),
+        toInt(r.page_count),
+        toText(r.format_type),
+        toText(r.narrator),
+        toBool(r.reread),
+        toDateStr(r.date_started),
+        toDateStr(r.date_finished),
+        toText(r.isbn),
+        toText(r.status),
+      ])
+    );
 
-    for (const r of bookRankings) {
-      const title = String(r.title);
-      const bookId = titleToBookId.get(normalizeTitle(title)) ?? null;
-      if (bookId === null) unmatchedTitles.push(title);
-
-      await client.query(
-        `INSERT INTO book_rankings (list_id, rank, title, book_id, score, had_star, year)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-        [
+    console.log(`Inserting book_rankings (${bookRankings.length})...`);
+    await batchInsert(
+      client,
+      "book_rankings",
+      ["list_id", "rank", "title", "book_id", "score", "had_star", "year"],
+      bookRankings.map((r) => {
+        const title = String(r.title);
+        const bookId = titleToBookId.get(normalizeTitle(title)) ?? null;
+        if (bookId === null) unmatchedTitles.push(title);
+        return [
           toText(r.list_id),
           toInt(r.rank),
           title,
@@ -205,69 +249,86 @@ async function main() {
           toFloat(r.score),
           toBool(r.had_star),
           toInt(r.year),
-        ]
-      );
-    }
+        ];
+      })
+    );
 
-    for (const r of seriesRankings) {
-      await client.query(
-        `INSERT INTO series_rankings (list_name, rank, series, status_flag)
-         VALUES ($1,$2,$3,$4)`,
-        [toText(r.list_name), toFloat(r.rank), toText(r.series), toText(r.status_flag)]
-      );
-    }
+    console.log(`Inserting series_rankings (${seriesRankings.length})...`);
+    await batchInsert(
+      client,
+      "series_rankings",
+      ["list_name", "rank", "series", "status_flag"],
+      seriesRankings.map((r) => [
+        toText(r.list_name),
+        toFloat(r.rank),
+        toText(r.series),
+        toText(r.status_flag),
+      ])
+    );
 
-    for (const r of dailyReading) {
-      await client.query(
-        `INSERT INTO daily_reading (date, pages) VALUES ($1, $2)`,
-        [toDateStr(r.date), toInt(r.pages)]
-      );
-    }
+    console.log(`Inserting daily_reading (${dailyReading.length})...`);
+    await batchInsert(
+      client,
+      "daily_reading",
+      ["date", "pages"],
+      dailyReading.map((r) => [toDateStr(r.date), toInt(r.pages)])
+    );
 
-    for (const r of weesels) {
-      await client.query(
-        `INSERT INTO weesels (year, category, nominee, author_or_narrator, result)
-         VALUES ($1,$2,$3,$4,$5)`,
-        [
-          toInt(r.year),
-          toText(r.category),
-          toText(r.nominee),
-          toText(r.author_or_narrator),
-          toText(r.result),
-        ]
-      );
-    }
+    console.log(`Inserting weesels (${weesels.length})...`);
+    await batchInsert(
+      client,
+      "weesels",
+      ["year", "category", "nominee", "author_or_narrator", "result"],
+      weesels.map((r) => [
+        toInt(r.year),
+        toText(r.category),
+        toText(r.nominee),
+        toText(r.author_or_narrator),
+        toText(r.result),
+      ])
+    );
 
-    for (const r of tbr) {
-      await client.query(
-        `INSERT INTO tbr (title, owned_or_format, word_count, subgenre, genre)
-         VALUES ($1,$2,$3,$4,$5)`,
-        [
-          toText(r.title),
-          toText(r.owned_or_format),
-          toInt(r.word_count),
-          toText(r.subgenre),
-          toText(r.genre),
-        ]
-      );
-    }
+    console.log(`Inserting tbr (${tbr.length})...`);
+    await batchInsert(
+      client,
+      "tbr",
+      ["title", "owned_or_format", "word_count", "subgenre", "genre"],
+      tbr.map((r) => [
+        toText(r.title),
+        toText(r.owned_or_format),
+        toInt(r.word_count),
+        toText(r.subgenre),
+        toText(r.genre),
+      ])
+    );
 
-    for (const r of ramblerReviews) {
-      await client.query(
-        `INSERT INTO rambler_reviews (review_subject, category, score, commentary)
-         VALUES ($1,$2,$3,$4)`,
-        [toText(r.review_subject), toText(r.category), toFloat(r.score), toText(r.commentary)]
-      );
-    }
+    console.log(`Inserting rambler_reviews (${ramblerReviews.length})...`);
+    await batchInsert(
+      client,
+      "rambler_reviews",
+      ["review_subject", "category", "score", "commentary"],
+      ramblerReviews.map((r) => [
+        toText(r.review_subject),
+        toText(r.category),
+        toFloat(r.score),
+        toText(r.commentary),
+      ])
+    );
 
-    for (const r of currentBooks) {
-      await client.query(
-        `INSERT INTO current_books (title, format_type, position, started)
-         VALUES ($1,$2,$3,$4)`,
-        [toText(r.title), toText(r.format_type), toText(r.position), toDateStr(r.started)]
-      );
-    }
+    console.log(`Inserting current_books (${currentBooks.length})...`);
+    await batchInsert(
+      client,
+      "current_books",
+      ["title", "format_type", "position", "started"],
+      currentBooks.map((r) => [
+        toText(r.title),
+        toText(r.format_type),
+        toText(r.position),
+        toDateStr(r.started),
+      ])
+    );
 
+    console.log("Committing...");
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
@@ -278,7 +339,7 @@ async function main() {
   }
 
   console.log(
-    `Imported: ${books.length} books, ${bookRankings.length} book_rankings, ` +
+    `\nImported: ${books.length} books, ${bookRankings.length} book_rankings, ` +
       `${seriesRankings.length} series_rankings, ${dailyReading.length} daily_reading, ` +
       `${weesels.length} weesels, ${tbr.length} tbr, ${ramblerReviews.length} rambler_reviews, ` +
       `${currentBooks.length} current_books.`
