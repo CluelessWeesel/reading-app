@@ -20,7 +20,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { title, author, genre, subgenre, word_count, owned_or_format } = body as Record<string, unknown>;
+  const { title, author, genre, subgenre, word_count, page_count, owned_or_format, owned } = body as Record<
+    string,
+    unknown
+  >;
 
   if (typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required." }, { status: 400 });
@@ -28,8 +31,14 @@ export async function PATCH(
   if (word_count != null && (!isFiniteNumber(word_count) || !Number.isInteger(word_count) || word_count < 0)) {
     return NextResponse.json({ error: "Word count must be a non-negative whole number." }, { status: 400 });
   }
+  if (page_count != null && (!isFiniteNumber(page_count) || !Number.isInteger(page_count) || page_count < 0)) {
+    return NextResponse.json({ error: "Page count must be a non-negative whole number." }, { status: 400 });
+  }
   if (genre != null && (typeof genre !== "string" || !genre.trim())) {
     return NextResponse.json({ error: "Genre must be a non-empty string, or omitted." }, { status: 400 });
+  }
+  if (owned != null && typeof owned !== "boolean") {
+    return NextResponse.json({ error: "Owned must be true, false, or omitted." }, { status: 400 });
   }
 
   const authorVal = typeof author === "string" ? author.trim() || null : null;
@@ -39,11 +48,12 @@ export async function PATCH(
 
   try {
     const { rows, rowCount } = await pool.query(
-      `update tbr set title = $1, author = $2, genre = $3, subgenre = $4, word_count = $5, owned_or_format = $6
-       where id = $7
-       returning id, title, author, genre, subgenre, word_count, owned_or_format, cover_url,
+      `update tbr set title = $1, author = $2, genre = $3, subgenre = $4, word_count = $5, owned_or_format = $6,
+         page_count = $7, owned = $8
+       where id = $9
+       returning id, title, author, genre, subgenre, word_count, page_count, owned_or_format, cover_url, owned,
          to_char(created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at`,
-      [title.trim(), authorVal, genreVal, subgenreVal, word_count ?? null, ownedFormatVal, idNum]
+      [title.trim(), authorVal, genreVal, subgenreVal, word_count ?? null, ownedFormatVal, page_count ?? null, owned ?? null, idNum]
     );
 
     if (rowCount === 0) {

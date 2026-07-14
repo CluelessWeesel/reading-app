@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { BookCard } from "./BookCard";
 import { BookTable } from "./BookTable";
 import { EditBookModal } from "../shared/EditBookModal";
@@ -10,40 +11,156 @@ import { fraunces } from "../shared/fonts";
 import { selectClass, labelClass } from "../shared/formControls";
 import { StartBookModal } from "../shared/StartBookModal";
 import { titleSortKey } from "../shared/titleSortKey";
+import { authorSortKey } from "../shared/authorSortKey";
+import { daysBetweenInclusive } from "../shared/isoDate";
 import type { Book } from "../shared/bookTypes";
 
-const SORTS = {
-  score: {
-    label: "Score (highest)",
-    compare: (a: Book, b: Book) => (b.score ?? -1) - (a.score ?? -1),
+type SortDirection = "asc" | "desc";
+
+type SortField = {
+  key: string;
+  label: string;
+  ascLabel: string;
+  descLabel: string;
+  // Whether this book has no value for this field -- missing books always
+  // sort to the end, regardless of direction, rather than jumping to the
+  // front on a reversed sort.
+  isMissing: (b: Book) => boolean;
+  // Only ever called when neither book is missing. Ascending sense (a<b is
+  // negative); descending is just this negated.
+  compareAsc: (a: Book, b: Book) => number;
+};
+
+function daysTaken(b: Book): number | null {
+  if (!b.date_started || !b.date_finished) return null;
+  const days = daysBetweenInclusive(b.date_started, b.date_finished);
+  return days > 0 ? days : null;
+}
+
+function readingPace(b: Book): number | null {
+  const days = daysTaken(b);
+  if (days == null || b.page_count == null) return null;
+  return b.page_count / days;
+}
+
+// Kept in alphabetical order by label -- that's the order the dropdown
+// renders them in, so no separate sort-for-display step is needed.
+const SORT_FIELDS: SortField[] = [
+  {
+    key: "author",
+    label: "Author",
+    ascLabel: "A–Z",
+    descLabel: "Z–A",
+    isMissing: (b) => !b.author,
+    compareAsc: (a, b) =>
+      authorSortKey(a.author as string).localeCompare(authorSortKey(b.author as string)),
   },
-  year_read: {
-    label: "Year read (newest)",
-    compare: (a: Book, b: Book) => (b.year_read ?? -Infinity) - (a.year_read ?? -Infinity),
+  {
+    key: "date_finished",
+    label: "Date finished",
+    ascLabel: "Earliest",
+    descLabel: "Most recent",
+    isMissing: (b) => !b.date_finished,
+    compareAsc: (a, b) => (a.date_finished as string).localeCompare(b.date_finished as string),
   },
-  title: {
-    label: "Title (A–Z)",
-    compare: (a: Book, b: Book) => titleSortKey(a.title).localeCompare(titleSortKey(b.title)),
+  {
+    key: "date_started",
+    label: "Date started",
+    ascLabel: "Earliest",
+    descLabel: "Most recent",
+    isMissing: (b) => !b.date_started,
+    compareAsc: (a, b) => (a.date_started as string).localeCompare(b.date_started as string),
   },
-  page_count: {
-    label: "Pages (most)",
-    compare: (a: Book, b: Book) => (b.page_count ?? -Infinity) - (a.page_count ?? -Infinity),
+  {
+    key: "days_taken",
+    label: "Days taken",
+    ascLabel: "Shortest",
+    descLabel: "Longest",
+    isMissing: (b) => daysTaken(b) == null,
+    compareAsc: (a, b) => (daysTaken(a) as number) - (daysTaken(b) as number),
   },
-  year_released: {
-    label: "Publication year (newest)",
-    compare: (a: Book, b: Book) => (b.year_released ?? -Infinity) - (a.year_released ?? -Infinity),
+  {
+    key: "page_count",
+    label: "Pages",
+    ascLabel: "Fewest",
+    descLabel: "Most",
+    isMissing: (b) => b.page_count == null,
+    compareAsc: (a, b) => (a.page_count as number) - (b.page_count as number),
   },
-  date_finished: {
-    label: "Date finished (most recent)",
-    compare: (a: Book, b: Book) => {
-      const at = a.date_finished ? new Date(a.date_finished).getTime() : -Infinity;
-      const bt = b.date_finished ? new Date(b.date_finished).getTime() : -Infinity;
-      return bt - at;
+  {
+    key: "year_released",
+    label: "Publication year",
+    ascLabel: "Oldest",
+    descLabel: "Newest",
+    isMissing: (b) => b.year_released == null,
+    compareAsc: (a, b) => (a.year_released as number) - (b.year_released as number),
+  },
+  {
+    key: "pace",
+    label: "Reading pace",
+    ascLabel: "Slowest",
+    descLabel: "Fastest",
+    isMissing: (b) => readingPace(b) == null,
+    compareAsc: (a, b) => (readingPace(a) as number) - (readingPace(b) as number),
+  },
+  {
+    key: "score",
+    label: "Score",
+    ascLabel: "Lowest",
+    descLabel: "Highest",
+    isMissing: (b) => b.score == null,
+    compareAsc: (a, b) => (a.score as number) - (b.score as number),
+  },
+  {
+    key: "series",
+    label: "Series",
+    ascLabel: "A–Z",
+    descLabel: "Z–A",
+    isMissing: (b) => !b.series,
+    compareAsc: (a, b) => {
+      const seriesCmp = (a.series as string).localeCompare(b.series as string);
+      if (seriesCmp !== 0) return seriesCmp;
+      return (a.series_number ?? Infinity) - (b.series_number ?? Infinity);
     },
   },
-} as const;
+  {
+    key: "title",
+    label: "Title",
+    ascLabel: "A–Z",
+    descLabel: "Z–A",
+    isMissing: () => false,
+    compareAsc: (a, b) => titleSortKey(a.title).localeCompare(titleSortKey(b.title)),
+  },
+  {
+    key: "word_count",
+    label: "Word count",
+    ascLabel: "Fewest",
+    descLabel: "Most",
+    isMissing: (b) => b.word_count == null,
+    compareAsc: (a, b) => (a.word_count as number) - (b.word_count as number),
+  },
+  {
+    key: "year_read",
+    label: "Year read",
+    ascLabel: "Oldest",
+    descLabel: "Newest",
+    isMissing: (b) => b.year_read == null,
+    compareAsc: (a, b) => (a.year_read as number) - (b.year_read as number),
+  },
+];
 
-type SortKey = keyof typeof SORTS;
+function compareBooks(field: SortField, direction: SortDirection) {
+  return (a: Book, b: Book) => {
+    const aMissing = field.isMissing(a);
+    const bMissing = field.isMissing(b);
+    if (aMissing && bMissing) return 0;
+    if (aMissing) return 1;
+    if (bMissing) return -1;
+    const cmp = field.compareAsc(a, b);
+    return direction === "asc" ? cmp : -cmp;
+  };
+}
+
 type ViewMode = "card" | "grid";
 
 const ALL = "__all__";
@@ -53,20 +170,40 @@ const ALL = "__all__";
 // sorting by, say, publication year looks like nothing happened because only
 // year read is on screen. Title is skipped since the card heading already
 // is the title.
-function sortValueLabel(book: Book, key: SortKey): string | null {
+function sortValueLabel(book: Book, key: string): string | null {
   switch (key) {
     case "title":
       return null;
     case "score":
       return `Score: ${book.score != null ? book.score.toFixed(1) : "Unrated"}`;
     case "year_read":
-      return `Year read: ${book.year_read}`;
+      return `Year read: ${book.year_read ?? "Unknown"}`;
     case "page_count":
-      return `Pages: ${book.page_count}`;
+      return `Pages: ${book.page_count ?? "Unknown"}`;
     case "year_released":
       return `Published: ${book.year_released ?? "Unknown"}`;
     case "date_finished":
       return `Finished: ${book.date_finished ?? "Unknown"}`;
+    case "word_count":
+      return `Words: ${book.word_count != null ? Math.round(book.word_count).toLocaleString() : "Unknown"}`;
+    case "author":
+      return `Author: ${book.author ?? "Unknown"}`;
+    case "series":
+      return book.series
+        ? `Series: ${book.series}${book.series_number != null ? ` #${book.series_number}` : ""}`
+        : "Series: Unknown";
+    case "date_started":
+      return `Started: ${book.date_started ?? "Unknown"}`;
+    case "days_taken": {
+      const days = daysTaken(book);
+      return `Days taken: ${days != null ? days : "Unknown"}`;
+    }
+    case "pace": {
+      const pace = readingPace(book);
+      return `Pace: ${pace != null ? `${pace.toFixed(1)} pg/day` : "Unknown"}`;
+    }
+    default:
+      return null;
   }
 }
 
@@ -77,14 +214,22 @@ export function LibraryView({
   books: Book[];
   allGenres: string[];
 }) {
+  const searchParams = useSearchParams();
   const [books, setBooks] = useState(initialBooks);
   const [genre, setGenre] = useState(ALL);
   const [format, setFormat] = useState(ALL);
   const [yearRead, setYearRead] = useState(ALL);
   const [yearPublished, setYearPublished] = useState(ALL);
-  const [series, setSeries] = useState(ALL);
-  const [missingCoversOnly, setMissingCoversOnly] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("year_read");
+  // Deep-linked from e.g. a series ranking row (/library?series=X) -- only
+  // honored if it actually matches a series in this library.
+  const [series, setSeries] = useState(() => {
+    const param = searchParams.get("series");
+    if (!param) return ALL;
+    return initialBooks.some((b) => b.series === param) ? param : ALL;
+  });
+  const [indieOnly, setIndieOnly] = useState(false);
+  const [sortFieldKey, setSortFieldKey] = useState<string>("year_read");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [view, setView] = useState<ViewMode>("card");
   const [editingBookId, setEditingBookId] = useState<number | null>(null);
   const [showStartBook, setShowStartBook] = useState(false);
@@ -123,7 +268,7 @@ export function LibraryView({
 
   // Filtering is shared between both views. Sorting is not: Card view uses
   // the "Sort by" dropdown below, Grid view sorts via its own clickable
-  // column headers -- so only Card view applies SORTS here.
+  // column headers -- so only Card view applies SORT_FIELDS here.
   const filtered = useMemo(() => {
     return books
       .filter((b) => genre === ALL || b.genre === genre)
@@ -131,17 +276,14 @@ export function LibraryView({
       .filter((b) => yearRead === ALL || String(b.year_read) === yearRead)
       .filter((b) => yearPublished === ALL || String(b.year_released) === yearPublished)
       .filter((b) => series === ALL || b.series === series)
-      .filter((b) => !missingCoversOnly || !b.cover_url);
-  }, [books, genre, format, yearRead, yearPublished, series, missingCoversOnly]);
+      .filter((b) => !indieOnly || b.indie === true);
+  }, [books, genre, format, yearRead, yearPublished, series, indieOnly]);
+
+  const sortField = SORT_FIELDS.find((f) => f.key === sortFieldKey) ?? SORT_FIELDS[0];
 
   const cardSorted = useMemo(
-    () => [...filtered].sort(SORTS[sortKey].compare),
-    [filtered, sortKey]
-  );
-
-  const missingCoverCount = useMemo(
-    () => books.filter((b) => !b.cover_url).length,
-    [books]
+    () => [...filtered].sort(compareBooks(sortField, sortDirection)),
+    [filtered, sortField, sortDirection]
   );
 
   const filtersActive =
@@ -150,7 +292,7 @@ export function LibraryView({
     yearRead !== ALL ||
     yearPublished !== ALL ||
     series !== ALL ||
-    missingCoversOnly;
+    indieOnly;
 
   function clearFilters() {
     setGenre(ALL);
@@ -158,7 +300,7 @@ export function LibraryView({
     setYearRead(ALL);
     setYearPublished(ALL);
     setSeries(ALL);
-    setMissingCoversOnly(false);
+    setIndieOnly(false);
   }
 
   function handleCoverChange(bookId: number, coverUrl: string | null) {
@@ -342,38 +484,52 @@ export function LibraryView({
               </select>
             </div>
 
+            <div className="flex flex-col gap-1">
+              <span className={labelClass()}>Indie</span>
+              <button
+                type="button"
+                onClick={() => setIndieOnly((v) => !v)}
+                aria-pressed={indieOnly}
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  indieOnly
+                    ? "border-accent bg-accent/10 text-ink"
+                    : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                }`}
+              >
+                Indie only
+              </button>
+            </div>
+
             {view === "card" && (
               <div className="flex flex-col gap-1">
                 <label className={labelClass()} htmlFor="sort-by">
                   Sort by
                 </label>
-                <select
-                  id="sort-by"
-                  className={selectClass()}
-                  value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value as SortKey)}
-                >
-                  {Object.entries(SORTS).map(([key, { label }]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-1">
+                  <select
+                    id="sort-by"
+                    className={selectClass()}
+                    value={sortFieldKey}
+                    onChange={(e) => setSortFieldKey(e.target.value)}
+                  >
+                    {SORT_FIELDS.map(({ key, label }) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
+                    className="rounded-full border border-hairline bg-card/70 px-3 py-1.5 text-sm text-ink shadow-sm transition hover:text-ink"
+                    title="Toggle sort direction"
+                  >
+                    {sortDirection === "asc" ? sortField.ascLabel : sortField.descLabel}{" "}
+                    <span aria-hidden>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                  </button>
+                </div>
               </div>
             )}
-
-            <div className="flex flex-col gap-1">
-              <span className={labelClass()}>Covers</span>
-              <label className="flex items-center gap-2 rounded-full border border-hairline bg-card/70 px-3 py-1.5 text-sm text-ink shadow-sm">
-                <input
-                  type="checkbox"
-                  checked={missingCoversOnly}
-                  onChange={(e) => setMissingCoversOnly(e.target.checked)}
-                  className="accent-accent"
-                />
-                Missing only ({missingCoverCount})
-              </label>
-            </div>
 
             {filtersActive && (
               <button
@@ -399,7 +555,7 @@ export function LibraryView({
                 book={book}
                 onCoverChange={handleCoverChange}
                 onEditRequest={setEditingBookId}
-                sortValueLabel={sortValueLabel(book, sortKey)}
+                sortValueLabel={sortValueLabel(book, sortFieldKey)}
               />
             ))}
           </div>

@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Cover } from "../shared/Cover";
 import { fraunces } from "../shared/fonts";
 import { FORMAT_LABELS } from "../shared/formatLabels";
 import { titleSortKey } from "../shared/titleSortKey";
+import { formatDateShort } from "../shared/formatDateShort";
 import type { Book } from "../shared/bookTypes";
 
 type EnrichedBook = Book & {
@@ -49,6 +51,7 @@ type ColumnKey =
   | "score"
   | "page_count"
   | "word_count"
+  | "date_finished"
   | "wordsPerPage"
   | "readingDays"
   | "pagesPerDay"
@@ -74,6 +77,17 @@ function numCompare(getter: (b: EnrichedBook) => number | null) {
     if (av == null) return 1;
     if (bv == null) return -1;
     return av - bv;
+  };
+}
+
+function dateCompare(getter: (b: EnrichedBook) => string | null) {
+  return (a: EnrichedBook, b: EnrichedBook) => {
+    const av = getter(a);
+    const bv = getter(b);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return av.localeCompare(bv);
   };
 }
 
@@ -151,6 +165,13 @@ const COLUMNS: Column[] = [
     align: "right",
     getValue: (b) => (b.word_count != null ? Math.round(b.word_count).toLocaleString() : "--"),
     compare: numCompare((b) => b.word_count),
+  },
+  {
+    key: "date_finished",
+    label: "Finished",
+    align: "right",
+    getValue: (b) => (b.date_finished ? formatDateShort(b.date_finished) : "--"),
+    compare: dateCompare((b) => b.date_finished),
   },
   {
     key: "wordsPerPage",
@@ -324,7 +345,17 @@ export function BookTable({
                         sort?.key === col.key ? "bg-accent/10 font-medium" : ""
                       } ${col.key === "title" ? `${fraunces.className} font-semibold` : ""}`}
                     >
-                      {value}
+                      {col.key === "title" ? (
+                        <Link href={`/books/${book.book_id}`} className="hover:underline">
+                          {value}
+                        </Link>
+                      ) : col.key === "author" && book.author_id != null ? (
+                        <Link href={`/authors/${book.author_id}`} className="hover:underline">
+                          {value}
+                        </Link>
+                      ) : (
+                        value
+                      )}
                     </td>
                   );
                 })}

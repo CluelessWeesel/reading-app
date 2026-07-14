@@ -8,9 +8,11 @@ export type Book = {
   book_id: number;
   title: string;
   author: string | null;
+  author_id: number | null;
   series: string | null;
   series_number: number | null;
   genre: string | null;
+  subgenre: string | null;
   year_read: number | null;
   year_released: number | null;
   score: number | null;
@@ -26,4 +28,8 @@ export type Book = {
   status: string | null;
   cover_url: string | null;
   review: string | null;
+  predicted_score: number | null;
+  predicted_margin: number | null;
+  legacy_notes: string | null;
+  indie: boolean | null;
 };

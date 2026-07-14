@@ -32,6 +32,7 @@ export async function PATCH(
     series,
     series_number,
     genre,
+    subgenre,
     year_released,
     year_read,
     score,
@@ -46,6 +47,8 @@ export async function PATCH(
     isbn,
     status,
     review,
+    predicted_score,
+    predicted_margin,
   } = body as Record<string, unknown>;
 
   if (typeof title !== "string" || !title.trim()) {
@@ -83,6 +86,27 @@ export async function PATCH(
       return NextResponse.json({ error: "Score must be between 0.5 and 5, in steps of 0.5." }, { status: 400 });
     }
   }
+  if (subgenre != null && (typeof subgenre !== "string" || !subgenre.trim())) {
+    return NextResponse.json({ error: "Subgenre must be a non-empty string, or omitted." }, { status: 400 });
+  }
+  if (predicted_score != null) {
+    if (
+      !isFiniteNumber(predicted_score) ||
+      predicted_score < 0.5 ||
+      predicted_score > 5 ||
+      Math.round(predicted_score * 2) !== predicted_score * 2
+    ) {
+      return NextResponse.json(
+        { error: "Predicted score must be between 0.5 and 5, in steps of 0.5." },
+        { status: 400 }
+      );
+    }
+  }
+  if (predicted_margin != null) {
+    if (!isFiniteNumber(predicted_margin) || predicted_margin < 0 || predicted_margin > 4.5) {
+      return NextResponse.json({ error: "Predicted margin must be between 0 and 4.5." }, { status: 400 });
+    }
+  }
   if (
     typeof date_started === "string" &&
     typeof date_finished === "string" &&
@@ -95,6 +119,7 @@ export async function PATCH(
 
   const authorVal = typeof author === "string" ? author.trim() || null : null;
   const genreVal = typeof genre === "string" ? genre.trim() || null : null;
+  const subgenreVal = typeof subgenre === "string" ? subgenre.trim() || null : null;
   const formatRawVal = typeof format_raw === "string" ? format_raw.trim() || null : null;
   const formatTypeVal = typeof format_type === "string" ? format_type : null;
   const seriesVal = typeof series === "string" ? series.trim() || null : null;
@@ -112,15 +137,17 @@ export async function PATCH(
          year_released = $6, year_read = $7, score = $8, format_raw = $9,
          format_type = $10, word_count = $11, page_count = $12, narrator = $13,
          reread = $14, date_started = $15, date_finished = $16, isbn = $17, status = $18,
-         review = $19
-       where book_id = $20
+         review = $19, subgenre = $20, predicted_score = $21, predicted_margin = $22
+       where book_id = $23
        returning
-         book_id, title, author, series, genre, year_released, year_read,
+         book_id, title, author, series, genre, subgenre, year_released, year_read,
          format_raw, format_type, page_count, narrator, reread, isbn, status, cover_url,
-         review,
+         review, legacy_notes,
          series_number::float8 as series_number,
          score::float8 as score,
          word_count::float8 as word_count,
+         predicted_score::float8 as predicted_score,
+         predicted_margin::float8 as predicted_margin,
          to_char(date_started, 'YYYY-MM-DD') as date_started,
          to_char(date_finished, 'YYYY-MM-DD') as date_finished`,
       [
@@ -143,6 +170,9 @@ export async function PATCH(
         isbnVal,
         statusVal,
         reviewVal,
+        subgenreVal,
+        predicted_score ?? null,
+        predicted_margin ?? null,
         bookIdNum,
       ]
     );

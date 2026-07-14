@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Book } from "./bookTypes";
 import { Cover } from "./Cover";
@@ -125,7 +126,11 @@ export function CurrentlyReadingPanel() {
             />
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-ink">{book.title}</p>
+              <p className="truncate text-sm font-semibold text-ink">
+                <Link href={`/books/${book.book_id}`} className="hover:underline">
+                  {book.title}
+                </Link>
+              </p>
               <p className="truncate text-xs text-ink-faint">{book.author ?? "Unknown author"}</p>
             </div>
 

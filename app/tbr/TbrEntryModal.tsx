@@ -11,12 +11,23 @@ type FormState = {
   genre: string;
   subgenre: string;
   word_count: string;
+  page_count: string;
   owned_or_format: string;
+  owned: "unsorted" | "owned" | "not_owned";
 };
 
 function toFormState(entry: TbrEntry | null): FormState {
   if (!entry) {
-    return { title: "", author: "", genre: "", subgenre: "", word_count: "", owned_or_format: "" };
+    return {
+      title: "",
+      author: "",
+      genre: "",
+      subgenre: "",
+      word_count: "",
+      page_count: "",
+      owned_or_format: "",
+      owned: "unsorted",
+    };
   }
   return {
     title: entry.title,
@@ -24,7 +35,9 @@ function toFormState(entry: TbrEntry | null): FormState {
     genre: entry.genre ?? "",
     subgenre: entry.subgenre ?? "",
     word_count: entry.word_count != null ? String(entry.word_count) : "",
+    page_count: entry.page_count != null ? String(entry.page_count) : "",
     owned_or_format: entry.owned_or_format ?? "",
+    owned: entry.owned == null ? "unsorted" : entry.owned ? "owned" : "not_owned",
   };
 }
 
@@ -34,6 +47,12 @@ function validate(form: FormState): string | null {
     const n = Number(form.word_count);
     if (Number.isNaN(n) || !Number.isInteger(n) || n < 0) {
       return "Word count must be a non-negative whole number.";
+    }
+  }
+  if (form.page_count.trim()) {
+    const n = Number(form.page_count);
+    if (Number.isNaN(n) || !Number.isInteger(n) || n < 0) {
+      return "Page count must be a non-negative whole number.";
     }
   }
   return null;
@@ -88,7 +107,9 @@ export function TbrEntryModal({
       genre: form.genre.trim() || null,
       subgenre: form.subgenre.trim() || null,
       word_count: form.word_count.trim() ? Number(form.word_count) : null,
+      page_count: form.page_count.trim() ? Number(form.page_count) : null,
       owned_or_format: form.owned_or_format.trim() || null,
+      owned: form.owned === "unsorted" ? null : form.owned === "owned",
     };
 
     try {
@@ -224,6 +245,21 @@ export function TbrEntryModal({
               />
             </div>
             <div>
+              <label className={modalLabelClass()} htmlFor="tbr-page-count">Page count</label>
+              <input
+                id="tbr-page-count"
+                className={fieldClass()}
+                type="number"
+                step="1"
+                min="0"
+                value={form.page_count}
+                onChange={(e) => set("page_count", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className={modalLabelClass()} htmlFor="tbr-owned-format">Owned / format</label>
               <input
                 id="tbr-owned-format"
@@ -237,6 +273,19 @@ export function TbrEntryModal({
                   <option key={o} value={o} />
                 ))}
               </datalist>
+            </div>
+            <div>
+              <label className={modalLabelClass()} htmlFor="tbr-owned">Owned</label>
+              <select
+                id="tbr-owned"
+                className={fieldClass()}
+                value={form.owned}
+                onChange={(e) => set("owned", e.target.value as FormState["owned"])}
+              >
+                <option value="unsorted">Unsorted</option>
+                <option value="owned">Owned</option>
+                <option value="not_owned">Not owned</option>
+              </select>
             </div>
           </div>
 

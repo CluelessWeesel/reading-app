@@ -62,6 +62,14 @@ export async function POST(request: NextRequest) {
       [listId, rank, title.trim(), book_id, score ?? null, Boolean(had_star), year]
     );
 
+    const oldRank: number | null = existingRows[0]?.rank ?? null;
+    if (oldRank !== rank) {
+      await client.query(
+        `insert into rank_changes (book_id, year, old_rank, new_rank) values ($1, $2, $3, $4)`,
+        [book_id, year, oldRank, rank]
+      );
+    }
+
     await client.query("COMMIT");
     return NextResponse.json({ list_id: listId, rank }, { status: 201 });
   } catch (err) {

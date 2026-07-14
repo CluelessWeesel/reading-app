@@ -10,13 +10,13 @@ export function CardPromptsStep({
   book,
   stepIndex,
   totalSteps,
-  onFinish,
+  onNext,
   onBack,
 }: {
   book: Book;
   stepIndex: number;
   totalSteps: number;
-  onFinish: () => void;
+  onNext: () => void;
   onBack: () => void;
 }) {
   const [prompts, setPrompts] = useState<Prompt[] | null>(null);
@@ -78,7 +78,7 @@ export function CardPromptsStep({
           throw new Error(body.error || "Save failed.");
         }
       }
-      onFinish();
+      onNext();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed.");
     } finally {
@@ -88,7 +88,7 @@ export function CardPromptsStep({
 
   if (prompts === null) {
     return (
-      <CeremonyStepShell title="A few questions" stepIndex={stepIndex} totalSteps={totalSteps} onNext={onFinish} onSkip={onFinish} onBack={onBack}>
+      <CeremonyStepShell title="A few questions" stepIndex={stepIndex} totalSteps={totalSteps} onNext={onNext} onSkip={onNext} onBack={onBack}>
         <p className="text-sm text-ink-faint">Loading...</p>
       </CeremonyStepShell>
     );
@@ -102,7 +102,7 @@ export function CardPromptsStep({
       onNext={handleFinish}
       onSkip={handleFinish}
       onBack={onBack}
-      nextLabel={saving ? "Finishing..." : "Finish"}
+      nextLabel={saving ? "Saving..." : "Next"}
       nextDisabled={saving}
     >
       <div className="space-y-4">

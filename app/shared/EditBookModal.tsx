@@ -12,9 +12,12 @@ type FormState = {
   series: string;
   series_number: string;
   genre: string;
+  subgenre: string;
   year_released: string;
   year_read: string;
   score: string;
+  predicted_score: string;
+  predicted_margin: string;
   format_raw: string;
   format_type: string;
   word_count: string;
@@ -34,9 +37,12 @@ function toFormState(book: Book): FormState {
     series: book.series ?? "",
     series_number: book.series_number != null ? String(book.series_number) : "",
     genre: book.genre ?? "",
+    subgenre: book.subgenre ?? "",
     year_released: book.year_released != null ? String(book.year_released) : "",
     year_read: book.year_read != null ? String(book.year_read) : "",
     score: book.score != null ? String(book.score) : "",
+    predicted_score: book.predicted_score != null ? String(book.predicted_score) : "",
+    predicted_margin: book.predicted_margin != null ? String(book.predicted_margin) : "",
     format_raw: book.format_raw ?? "",
     format_type: book.format_type ?? "",
     word_count: book.word_count != null ? String(book.word_count) : "",
@@ -86,6 +92,19 @@ function validate(form: FormState): string | null {
 
   if (form.date_started && form.date_finished && form.date_started > form.date_finished) {
     return "Date finished can't be before date started.";
+  }
+
+  if (form.predicted_score.trim()) {
+    const p = Number(form.predicted_score);
+    if (Number.isNaN(p) || p < 0.5 || p > 5 || Math.round(p * 2) !== p * 2) {
+      return "Predicted score must be between 0.5 and 5, in steps of 0.5.";
+    }
+  }
+  if (form.predicted_margin.trim()) {
+    const m = Number(form.predicted_margin);
+    if (Number.isNaN(m) || m < 0 || m > 4.5) {
+      return "Predicted margin must be between 0 and 4.5.";
+    }
   }
 
   return null;
@@ -167,9 +186,12 @@ export function EditBookModal({
           series: form.series.trim() || null,
           series_number: form.series_number.trim() ? Number(form.series_number) : null,
           genre: form.genre || null,
+          subgenre: form.subgenre.trim() || null,
           year_released: form.year_released.trim() ? Number(form.year_released) : null,
           year_read: form.year_read.trim() ? Number(form.year_read) : null,
           score: form.score.trim() ? Number(form.score) : null,
+          predicted_score: form.predicted_score.trim() ? Number(form.predicted_score) : null,
+          predicted_margin: form.predicted_margin.trim() ? Number(form.predicted_margin) : null,
           format_raw: form.format_raw.trim() || null,
           format_type: form.format_type || null,
           word_count: form.word_count.trim() ? Number(form.word_count) : null,
@@ -306,6 +328,17 @@ export function EditBookModal({
             </div>
           </div>
 
+          <div>
+            <label className={modalLabelClass()} htmlFor="field-subgenre">Subgenre</label>
+            <input
+              id="field-subgenre"
+              className={fieldClass()}
+              value={form.subgenre}
+              onChange={(e) => set("subgenre", e.target.value)}
+              placeholder="None"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={modalLabelClass()} htmlFor="field-format-raw">Format (raw)</label>
@@ -376,6 +409,35 @@ export function EditBookModal({
                 step="1"
                 value={form.page_count}
                 onChange={(e) => set("page_count", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={modalLabelClass()} htmlFor="field-predicted-score">Predicted score</label>
+              <input
+                id="field-predicted-score"
+                className={fieldClass()}
+                type="number"
+                step="0.5"
+                min="0.5"
+                max="5"
+                value={form.predicted_score}
+                onChange={(e) => set("predicted_score", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={modalLabelClass()} htmlFor="field-predicted-margin">Predicted margin (±)</label>
+              <input
+                id="field-predicted-margin"
+                className={fieldClass()}
+                type="number"
+                step="0.1"
+                min="0"
+                max="4.5"
+                value={form.predicted_margin}
+                onChange={(e) => set("predicted_margin", e.target.value)}
               />
             </div>
           </div>

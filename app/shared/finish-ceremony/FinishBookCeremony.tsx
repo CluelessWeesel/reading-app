@@ -8,11 +8,12 @@ import { ConfirmDetailsStep } from "./ConfirmDetailsStep";
 import { RadarRatingsStep } from "./RadarRatingsStep";
 import { RankingPlacementStep } from "./RankingPlacementStep";
 import { ScoreStep } from "./ScoreStep";
+import { WeeselsWatchStep } from "./WeeselsWatchStep";
 import { WrittenReviewStep } from "./WrittenReviewStep";
 
-type Step = "confirm" | "score" | "radar" | "ranking" | "review" | "prompts" | "closing";
+type Step = "confirm" | "score" | "radar" | "ranking" | "review" | "prompts" | "weesels" | "closing";
 
-const CONTENT_STEPS: Step[] = ["confirm", "score", "radar", "ranking", "review", "prompts"];
+const CONTENT_STEPS: Step[] = ["confirm", "score", "radar", "ranking", "review", "prompts", "weesels"];
 // +1 so the progress bar counts the closing screen as the final step of the 7 the user experiences.
 const TOTAL_STEPS = CONTENT_STEPS.length + 1;
 
@@ -144,8 +145,17 @@ export function FinishBookCeremony({
             book={book}
             stepIndex={stepIndex}
             totalSteps={TOTAL_STEPS}
-            onFinish={handleFinish}
+            onNext={() => goTo("weesels")}
             onBack={() => goTo("review")}
+          />
+        )}
+        {step === "weesels" && (
+          <WeeselsWatchStep
+            book={book}
+            stepIndex={stepIndex}
+            totalSteps={TOTAL_STEPS}
+            onFinish={handleFinish}
+            onBack={() => goTo("prompts")}
           />
         )}
         {step === "closing" && closingData && (

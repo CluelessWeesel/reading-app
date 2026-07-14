@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Cover } from "../shared/Cover";
 import { fraunces } from "../shared/fonts";
 import { StarRating } from "./StarRating";
@@ -31,9 +32,19 @@ export function BookCard({
           font-rounding, or whether a book has a series/sort label. */}
       <div className="flex h-32 flex-col gap-0.5 px-0.5">
         <h2 className={`${fraunces.className} line-clamp-2 text-base font-semibold leading-snug text-ink`}>
-          {book.title}
+          <Link href={`/books/${book.book_id}`} className="hover:underline">
+            {book.title}
+          </Link>
         </h2>
-        <p className="truncate text-sm text-ink-muted">{book.author}</p>
+        <p className="truncate text-sm text-ink-muted">
+          {book.author_id != null ? (
+            <Link href={`/authors/${book.author_id}`} className="hover:underline">
+              {book.author}
+            </Link>
+          ) : (
+            book.author
+          )}
+        </p>
         <p className={`truncate text-xs italic text-ink-faint ${book.series ? "" : "invisible"}`}>
           {book.series ?? " "}
           {book.series && book.series_number != null ? ` #${book.series_number}` : ""}
