@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { fetchBookMetadata } from "./bookMetadata";
 import type { Book } from "./bookTypes";
 import { Cover } from "./Cover";
 import { EditBookModal } from "./EditBookModal";
@@ -22,8 +23,19 @@ export function CurrentlyReadingPanel() {
   const [positionDrafts, setPositionDrafts] = useState<Record<number, string>>({});
   const [allGenres, setAllGenres] = useState<string[]>([]);
   const [seriesOptions, setSeriesOptions] = useState<string[]>([]);
+  const [metadataError, setMetadataError] = useState(false);
   const [editingBookId, setEditingBookId] = useState<number | null>(null);
   const [finishingBookId, setFinishingBookId] = useState<number | null>(null);
+
+  function loadMetadata() {
+    setMetadataError(false);
+    fetchBookMetadata()
+      .then((data) => {
+        setAllGenres(data.genres);
+        setSeriesOptions(data.series);
+      })
+      .catch(() => setMetadataError(true));
+  }
 
   function refresh() {
     fetch("/api/current-books")
@@ -44,13 +56,7 @@ export function CurrentlyReadingPanel() {
 
   useEffect(() => {
     refresh();
-    fetch("/api/book-metadata")
-      .then((res) => res.json())
-      .then((data) => {
-        setAllGenres(Array.isArray(data.genres) ? data.genres : []);
-        setSeriesOptions(Array.isArray(data.series) ? data.series : []);
-      })
-      .catch(() => {});
+    loadMetadata();
     window.addEventListener("current-books:changed", refresh);
     return () => window.removeEventListener("current-books:changed", refresh);
   }, []);
@@ -202,6 +208,8 @@ export function CurrentlyReadingPanel() {
           book={editingBook}
           allGenres={allGenres}
           seriesOptions={seriesOptions}
+          metadataError={metadataError}
+          onRetryMetadata={loadMetadata}
           onClose={() => setEditingBookId(null)}
           onSaved={handleBookSaved}
           onDeleted={handleBookDeleted}

@@ -115,6 +115,8 @@ export function EditBookModal({
   book,
   allGenres,
   seriesOptions,
+  metadataError,
+  onRetryMetadata,
   onClose,
   onSaved,
   onDeleted,
@@ -122,6 +124,8 @@ export function EditBookModal({
   book: Book;
   allGenres: string[];
   seriesOptions: string[];
+  metadataError?: boolean;
+  onRetryMetadata?: () => void;
   onClose: () => void;
   onSaved: (book: Book) => void;
   onDeleted?: (bookId: number) => void;
@@ -311,6 +315,14 @@ export function EditBookModal({
                   <option key={g} value={g}>{g}</option>
                 ))}
               </select>
+              {metadataError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  Couldn&apos;t load genres.{" "}
+                  <button type="button" onClick={onRetryMetadata} className="underline decoration-dotted underline-offset-4">
+                    Retry
+                  </button>
+                </p>
+              )}
             </div>
             <div>
               <label className={modalLabelClass()} htmlFor="field-format-type">Format type</label>

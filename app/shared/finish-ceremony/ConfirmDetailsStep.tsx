@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchBookMetadata } from "../bookMetadata";
 import type { Book } from "../bookTypes";
 import { fieldClass, modalLabelClass } from "../formControls";
 import { FORMAT_LABELS } from "../formatLabels";
@@ -83,17 +84,22 @@ export function ConfirmDetailsStep({
   const [form, setForm] = useState<FormState>(() => toFormState(book));
   const [allGenres, setAllGenres] = useState<string[]>([]);
   const [seriesOptions, setSeriesOptions] = useState<string[]>([]);
+  const [metadataError, setMetadataError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/book-metadata")
-      .then((res) => res.json())
+  function loadMetadata() {
+    setMetadataError(false);
+    fetchBookMetadata()
       .then((data) => {
-        setAllGenres(Array.isArray(data.genres) ? data.genres : []);
-        setSeriesOptions(Array.isArray(data.series) ? data.series : []);
+        setAllGenres(data.genres);
+        setSeriesOptions(data.series);
       })
-      .catch(() => {});
+      .catch(() => setMetadataError(true));
+  }
+
+  useEffect(() => {
+    loadMetadata();
   }, []);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -185,6 +191,14 @@ export function ConfirmDetailsStep({
               <option value="">None</option>
               {allGenres.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
+            {metadataError && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                Couldn&apos;t load genres.{" "}
+                <button type="button" onClick={loadMetadata} className="underline decoration-dotted underline-offset-4">
+                  Retry
+                </button>
+              </p>
+            )}
           </div>
           <div>
             <label className={modalLabelClass()} htmlFor="cf-format-type">Format type</label>
