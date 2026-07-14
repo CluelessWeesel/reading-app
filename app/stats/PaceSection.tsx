@@ -168,6 +168,12 @@ export function PaceSection({
           <StatCard label="Total pages" value={formatPagesK(data.totalPages)} />
           <StatCard label="Total words" value={formatPagesK(data.totalWordsEstimate)} />
           <StatCard label="Books finished" value={String(data.booksFinished)} />
+          <StatCard label="Avg. pages/book" value={data.avgBookLength != null ? `${Math.round(data.avgBookLength)} pg` : "--"} />
+          <StatCard
+            label="Book-equivalents"
+            value={(data.totalWordsEstimate / 90_000).toFixed(1)}
+            sub="90k words/book"
+          />
           <StatCard label="Pages/day" value={data.pagesPerDay.toFixed(1)} />
           <StatCard label="Words/day" value={formatPagesK(data.wordsPerDay)} />
           <StatCard label="Reading days" value={`${data.readingDays} / ${data.totalDays}`} />

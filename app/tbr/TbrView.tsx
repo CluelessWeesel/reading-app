@@ -7,6 +7,7 @@ import { fraunces } from "../shared/fonts";
 import { selectClass, labelClass } from "../shared/formControls";
 import { formatCompactNumber } from "../shared/formatCompactNumber";
 import { formatExactUtc, formatRelativeTime } from "../shared/relativeTime";
+import { authorSortKey } from "../shared/authorSortKey";
 import { StartBookModal } from "../shared/StartBookModal";
 import { titleSortKey } from "../shared/titleSortKey";
 import { TbrEntryModal } from "./TbrEntryModal";
@@ -61,15 +62,52 @@ const SORTS = {
     label: "Title (A–Z)",
     compare: (a: TbrEntry, b: TbrEntry) => titleSortKey(a.title).localeCompare(titleSortKey(b.title)),
   },
+  author: {
+    label: "Author (A–Z)",
+    compare: (a: TbrEntry, b: TbrEntry) => {
+      if (!a.author && !b.author) return 0;
+      if (!a.author) return 1;
+      if (!b.author) return -1;
+      return authorSortKey(a.author).localeCompare(authorSortKey(b.author));
+    },
+  },
   word_count: {
     label: "Word count (highest)",
     compare: (a: TbrEntry, b: TbrEntry) => (b.word_count ?? -1) - (a.word_count ?? -1),
+  },
+  page_count: {
+    label: "Page count (highest)",
+    compare: (a: TbrEntry, b: TbrEntry) => (b.page_count ?? -1) - (a.page_count ?? -1),
   },
 } as const;
 
 type SortKey = keyof typeof SORTS;
 type Shelf = "owned" | "unowned" | "unsorted";
 type Layout = "list" | "card";
+
+const ALL = "__all__";
+
+// Short/medium/long by page count -- breakpoints chosen from the live TBR's
+// own distribution (roughly a 3-way split: 139/206/172 entries), not an
+// arbitrary "genre standard" page count.
+type LengthBucket = "short" | "medium" | "long";
+
+function lengthOf(pageCount: number | null): LengthBucket | null {
+  if (pageCount == null) return null;
+  if (pageCount < 300) return "short";
+  if (pageCount < 500) return "medium";
+  return "long";
+}
+
+const LENGTH_LABELS: Record<LengthBucket, string> = {
+  short: "Short (<300 pg)",
+  medium: "Medium (300–500 pg)",
+  long: "Long (500+ pg)",
+};
+
+function formatLabel(raw: string): string {
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
 
 export function TbrView({
   entries: initialEntries,
@@ -83,6 +121,10 @@ export function TbrView({
   const [shelf, setShelf] = useState<Shelf>("owned");
   const [layout, setLayout] = useState<Layout>("list");
   const [sortKey, setSortKey] = useState<SortKey>("title");
+  const [genreFilter, setGenreFilter] = useState(ALL);
+  const [subgenreFilter, setSubgenreFilter] = useState(ALL);
+  const [formatFilter, setFormatFilter] = useState(ALL);
+  const [lengthFilter, setLengthFilter] = useState(ALL);
   const [modalTarget, setModalTarget] = useState<TbrEntry | "new" | null>(null);
   const [startBookTarget, setStartBookTarget] = useState<TbrEntry | "generic" | null>(null);
 
@@ -115,6 +157,31 @@ export function TbrView({
     [entries]
   );
 
+  const genreOptions = useMemo(
+    () => Array.from(new Set(entries.filter((e) => e.genre).map((e) => e.genre as string))).sort(),
+    [entries]
+  );
+
+  // Cascades on the selected genre -- picking a genre narrows subgenre
+  // options to only those that actually appear within it, instead of
+  // showing every subgenre across the whole TBR regardless of relevance.
+  const subgenreOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          entries
+            .filter((e) => e.subgenre && (genreFilter === ALL || e.genre === genreFilter))
+            .map((e) => e.subgenre as string)
+        )
+      ).sort(),
+    [entries, genreFilter]
+  );
+
+  function handleGenreFilterChange(value: string) {
+    setGenreFilter(value);
+    setSubgenreFilter(ALL);
+  }
+
   // created_at is only ever set on insert (never touched by an edit), so the
   // most recent one across all entries is exactly "when did I last add a
   // new book" -- not "when did I last edit one".
@@ -140,13 +207,26 @@ export function TbrView({
         if (shelf === "unowned") return e.owned === false;
         return e.owned == null;
       })
+      .filter((e) => genreFilter === ALL || e.genre === genreFilter)
+      .filter((e) => subgenreFilter === ALL || e.subgenre === subgenreFilter)
+      .filter((e) => formatFilter === ALL || e.owned_or_format === formatFilter)
+      .filter((e) => lengthFilter === ALL || lengthOf(e.page_count) === lengthFilter)
       .sort(SORTS[sortKey].compare);
-  }, [entries, search, shelf, sortKey]);
+  }, [entries, search, shelf, sortKey, genreFilter, subgenreFilter, formatFilter, lengthFilter]);
 
-  const filtersActive = search.trim() !== "";
+  const filtersActive =
+    search.trim() !== "" ||
+    genreFilter !== ALL ||
+    subgenreFilter !== ALL ||
+    formatFilter !== ALL ||
+    lengthFilter !== ALL;
 
   function clearFilters() {
     setSearch("");
+    setGenreFilter(ALL);
+    setSubgenreFilter(ALL);
+    setFormatFilter(ALL);
+    setLengthFilter(ALL);
   }
 
   function handleSaved(entry: TbrEntry) {
@@ -302,6 +382,82 @@ export function TbrView({
                 {Object.entries(SORTS).map(([key, { label }]) => (
                   <option key={key} value={key}>
                     {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={labelClass()} htmlFor="tbr-genre">
+                Genre
+              </label>
+              <select
+                id="tbr-genre"
+                className={selectClass()}
+                value={genreFilter}
+                onChange={(e) => handleGenreFilterChange(e.target.value)}
+              >
+                <option value={ALL}>All genres</option>
+                {genreOptions.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={labelClass()} htmlFor="tbr-subgenre">
+                Subgenre
+              </label>
+              <select
+                id="tbr-subgenre"
+                className={selectClass()}
+                value={subgenreFilter}
+                onChange={(e) => setSubgenreFilter(e.target.value)}
+              >
+                <option value={ALL}>All subgenres</option>
+                {subgenreOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={labelClass()} htmlFor="tbr-format">
+                Format
+              </label>
+              <select
+                id="tbr-format"
+                className={selectClass()}
+                value={formatFilter}
+                onChange={(e) => setFormatFilter(e.target.value)}
+              >
+                <option value={ALL}>All formats</option>
+                {ownedFormatOptions.map((f) => (
+                  <option key={f} value={f}>
+                    {formatLabel(f)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={labelClass()} htmlFor="tbr-length">
+                Length
+              </label>
+              <select
+                id="tbr-length"
+                className={selectClass()}
+                value={lengthFilter}
+                onChange={(e) => setLengthFilter(e.target.value)}
+              >
+                <option value={ALL}>Any length</option>
+                {(Object.keys(LENGTH_LABELS) as LengthBucket[]).map((l) => (
+                  <option key={l} value={l}>
+                    {LENGTH_LABELS[l]}
                   </option>
                 ))}
               </select>

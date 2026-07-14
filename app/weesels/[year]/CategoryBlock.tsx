@@ -19,14 +19,14 @@ function AuthorLink({
   photos: Record<number, string | null>;
   size?: "sm" | "lg";
 }) {
-  const photoClass = size === "lg" ? "aspect-square w-6" : "aspect-square w-4";
+  const photoClass = size === "lg" ? "aspect-square w-8" : "aspect-square w-5";
   const textClass = size === "lg" ? `${fraunces.className} text-lg font-semibold text-ink` : "truncate text-xs text-ink-faint";
   if (authorId == null) {
     return <p className={textClass}>{name}</p>;
   }
   return (
-    <Link href={`/authors/${authorId}`} className={`inline-flex min-w-0 items-center gap-1.5 hover:underline ${textClass}`}>
-      <AuthorPhoto name={name} photoUrl={photos[authorId] ?? null} className={`${photoClass} shrink-0`} initialClassName="text-[8px]" />
+    <Link href={`/authors/${authorId}`} className={`inline-flex min-w-0 items-center gap-2 hover:underline ${textClass}`}>
+      <AuthorPhoto name={name} photoUrl={photos[authorId] ?? null} className={`${photoClass} shrink-0`} initialClassName="text-[9px]" />
       <span className="truncate">{name}</span>
     </Link>
   );
@@ -49,23 +49,29 @@ function NomineeRow({
     return <AuthorLink name={authorName ?? title} authorId={authorId} photos={photos} />;
   }
 
-  const content = (
-    <>
-      {row.book_id != null && <CoverThumb title={title} coverUrl={row.cover_url} className="aspect-[2/3] w-8" />}
+  // Title and author are separate links (like the Winner block above),
+  // never one nested inside the other -- an <a> wrapping the whole row
+  // used to also contain AuthorLink's own <a>, which is invalid HTML and
+  // broke hydration ("<a> cannot be a descendant of <a>").
+  return (
+    <div className="flex items-center gap-3">
+      {row.book_id != null && <CoverThumb title={title} coverUrl={row.cover_url} className="aspect-[2/3] w-9" />}
       <div className="min-w-0">
-        <p className="truncate text-sm text-ink">{title}</p>
-        {authorName && <AuthorLink name={authorName} authorId={authorId} photos={photos} />}
+        {row.book_id != null ? (
+          <Link href={`/books/${row.book_id}`} className="block truncate text-sm text-ink hover:underline">
+            {title}
+          </Link>
+        ) : (
+          <p className="truncate text-sm text-ink">{title}</p>
+        )}
+        {authorName && (
+          <div className="mt-1">
+            <AuthorLink name={authorName} authorId={authorId} photos={photos} />
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
-  if (row.book_id != null) {
-    return (
-      <Link href={`/books/${row.book_id}`} className="flex items-center gap-2 hover:underline">
-        {content}
-      </Link>
-    );
-  }
-  return <div className="flex items-center gap-2">{content}</div>;
 }
 
 export function CategoryBlock({
@@ -150,7 +156,7 @@ export function CategoryBlock({
       {nominees.length > 0 && (
         <div className="mt-3 border-t border-hairline pt-3">
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-faint">Nominees</p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {nominees.map((n) => (
               <NomineeRow key={n.id} row={n} categoryName={category.name} photos={photos} />
             ))}

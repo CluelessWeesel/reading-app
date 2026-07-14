@@ -55,6 +55,7 @@ export type ScopeData = {
   bestStreak: number;
   currentStreak: number | null;
   booksFinished: number;
+  avgBookLength: number | null;
   totalWordsEstimate: number;
   pagesPerDay: number;
   wordsPerDay: number;

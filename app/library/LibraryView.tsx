@@ -228,7 +228,7 @@ export function LibraryView({
     return initialBooks.some((b) => b.series === param) ? param : ALL;
   });
   const [indieOnly, setIndieOnly] = useState(false);
-  const [sortFieldKey, setSortFieldKey] = useState<string>("year_read");
+  const [sortFieldKey, setSortFieldKey] = useState<string>("date_finished");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [view, setView] = useState<ViewMode>("card");
   const [editingBookId, setEditingBookId] = useState<number | null>(null);

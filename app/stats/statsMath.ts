@@ -175,6 +175,8 @@ export function computeScopeData({
   // date_finished, score, or status, and aren't actually done yet).
   const finishedBooks = books.filter((b) => b.date_finished && b.date_finished >= start && b.date_finished <= end);
   const booksFinished = finishedBooks.length;
+  const avgBookLength =
+    booksFinished > 0 ? finishedBooks.reduce((sum, b) => sum + b.page_count, 0) / booksFinished : null;
 
   // No per-day word log exists, so words are derived from the same
   // continuous page total using a single global words-per-page ratio --
@@ -221,6 +223,7 @@ export function computeScopeData({
     bestStreak,
     currentStreak,
     booksFinished,
+    avgBookLength,
     totalWordsEstimate,
     pagesPerDay,
     wordsPerDay,
