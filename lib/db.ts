@@ -12,6 +12,12 @@ export const pool =
   new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+    // Supabase's session-mode pooler caps this project at 15 concurrent
+    // clients total, shared with one-off scripts -- keep the app's own
+    // share small and release idle connections quickly instead of holding
+    // them open.
+    max: 5,
+    idleTimeoutMillis: 10_000,
   });
 
 if (process.env.NODE_ENV !== "production") {
