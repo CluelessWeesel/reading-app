@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Cover } from "../shared/Cover";
 import { FORMAT_LABELS } from "../shared/formatLabels";
+import { addIsoDays, todayLocalIso } from "../shared/isoDate";
 import {
   computePagesDelta,
   formatPositionLabel,
   positionInputMode,
   positionQuestionLabel,
 } from "../shared/positionMath";
+import { BackfillForm } from "./BackfillForm";
 import type { CurrentBookForLog } from "./types";
 
 export function TonightTab({
@@ -17,9 +19,11 @@ export function TonightTab({
   onCoverChange,
 }: {
   currentBooks: CurrentBookForLog[];
-  onBooksUpdated: (updates: { book_id: number; position: number }[]) => void;
+  onBooksUpdated: (updates: { book_id: number; position: number; last_log_date: string }[]) => void;
   onCoverChange: (bookId: number, coverUrl: string | null) => void;
 }) {
+  const today = todayLocalIso();
+  const [selectedDate, setSelectedDate] = useState(today);
   const [inputs, setInputs] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<Record<number, string | null>>({});
   const [saving, setSaving] = useState(false);
@@ -69,15 +73,15 @@ export function TonightTab({
       const res = await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries: loggableEntries }),
+        body: JSON.stringify({ entries: loggableEntries, date: today }),
       });
       const data = await res.json();
 
-      const updates: { book_id: number; position: number }[] = [];
+      const updates: { book_id: number; position: number; last_log_date: string }[] = [];
       for (const r of data.results as { book_id: number; ok: boolean; error?: string }[]) {
         if (r.ok) {
           const entry = loggableEntries.find((e) => e.book_id === r.book_id);
-          if (entry) updates.push({ book_id: r.book_id, position: entry.position });
+          if (entry) updates.push({ book_id: r.book_id, position: entry.position, last_log_date: today });
           setInputs((prev) => ({ ...prev, [r.book_id]: "" }));
         } else {
           setErrors((prev) => ({ ...prev, [r.book_id]: r.error ?? "Failed to save." }));
@@ -90,6 +94,13 @@ export function TonightTab({
     }
   }
 
+  function stepDate(deltaDays: number) {
+    setSelectedDate((prev) => {
+      const next = addIsoDays(prev, deltaDays);
+      return next > today ? today : next;
+    });
+  }
+
   if (currentBooks.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-ink-faint">
@@ -98,72 +109,113 @@ export function TonightTab({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {currentBooks.map((book) => {
-        const needsPageCount = book.format_type === "audio" && book.page_count == null;
-        return (
-          <div key={book.book_id} className="rounded-xl border border-hairline bg-card/50 p-4">
-            <div className="mb-3 flex items-center gap-3">
-              <Cover
-                id={book.book_id}
-                title={book.title}
-                coverUrl={book.cover_url}
-                onCoverChange={onCoverChange}
-                apiPath={`/api/books/${book.book_id}/cover`}
-                className="aspect-[2/3] w-10"
-                initialClassName="text-sm"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-ink">{book.title}</p>
-                <p className="truncate text-xs text-ink-faint">
-                  {FORMAT_LABELS[book.format_type ?? ""] ?? "Unknown format"} · Last:{" "}
-                  {formatPositionLabel(book.position, book.format_type, book.page_count)}
-                </p>
-              </div>
-            </div>
-
-            {needsPageCount ? (
-              <p className="rounded-lg bg-hover px-3 py-2 text-sm text-ink-faint">
-                Set a page count for this book in Library to log it here.
-              </p>
-            ) : (
-              <>
-                <label className="mb-1 block text-sm font-medium text-ink" htmlFor={`pos-${book.book_id}`}>
-                  {positionQuestionLabel(book.format_type)}
-                </label>
-                <input
-                  id={`pos-${book.book_id}`}
-                  type="number"
-                  inputMode={positionInputMode(book.format_type)}
-                  value={inputs[book.book_id] ?? ""}
-                  onChange={(e) => handleChange(book, e.target.value)}
-                  className="w-full rounded-lg border border-hairline bg-card px-4 py-3 text-center text-2xl text-ink outline-none focus:ring-2 focus:ring-accent/40"
-                />
-                {errors[book.book_id] && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors[book.book_id]}</p>
-                )}
-                {deltaDisplay(book) && (
-                  <p className="mt-1 text-sm font-medium text-accent">{deltaDisplay(book)}</p>
-                )}
-              </>
-            )}
-          </div>
-        );
-      })}
-
+  const dateNav = (
+    <div className="mb-4 flex items-center justify-center gap-3">
       <button
         type="button"
-        onClick={handleSave}
-        disabled={saving || loggableEntries.length === 0}
-        className="w-full rounded-full bg-accent py-4 text-lg font-semibold text-on-accent shadow-sm transition disabled:opacity-50"
+        aria-label="Previous day"
+        onClick={() => stepDate(-1)}
+        className="shrink-0 rounded-lg border border-hairline bg-card px-3 py-2 text-ink-faint transition hover:text-ink"
       >
-        {saving ? "Saving..." : "Save"}
+        ‹
       </button>
+      <p className="text-sm font-medium text-ink">{selectedDate === today ? "Tonight" : selectedDate}</p>
+      <button
+        type="button"
+        aria-label="Next day"
+        onClick={() => stepDate(1)}
+        disabled={selectedDate >= today}
+        className="shrink-0 rounded-lg border border-hairline bg-card px-3 py-2 text-ink-faint transition hover:text-ink disabled:opacity-30"
+      >
+        ›
+      </button>
+    </div>
+  );
 
-      {todayTotal !== null && (
-        <p className="text-center text-sm text-ink-faint">Today&apos;s total: {todayTotal} pages</p>
-      )}
+  if (selectedDate !== today) {
+    return (
+      <div>
+        {dateNav}
+        <BackfillForm
+          key={selectedDate}
+          targetDate={selectedDate}
+          currentBooks={currentBooks}
+          onBooksUpdated={onBooksUpdated}
+          onCoverChange={onCoverChange}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {dateNav}
+      <div className="space-y-4">
+        {currentBooks.map((book) => {
+          const needsPageCount = book.format_type === "audio" && book.page_count == null;
+          return (
+            <div key={book.book_id} className="rounded-xl border border-hairline bg-card/50 p-4">
+              <div className="mb-3 flex items-center gap-3">
+                <Cover
+                  id={book.book_id}
+                  title={book.title}
+                  coverUrl={book.cover_url}
+                  onCoverChange={onCoverChange}
+                  apiPath={`/api/books/${book.book_id}/cover`}
+                  className="aspect-[2/3] w-10"
+                  initialClassName="text-sm"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-ink">{book.title}</p>
+                  <p className="truncate text-xs text-ink-faint">
+                    {FORMAT_LABELS[book.format_type ?? ""] ?? "Unknown format"} · Last:{" "}
+                    {formatPositionLabel(book.position, book.format_type, book.page_count)}
+                  </p>
+                </div>
+              </div>
+
+              {needsPageCount ? (
+                <p className="rounded-lg bg-hover px-3 py-2 text-sm text-ink-faint">
+                  Set a page count for this book in Library to log it here.
+                </p>
+              ) : (
+                <>
+                  <label className="mb-1 block text-sm font-medium text-ink" htmlFor={`pos-${book.book_id}`}>
+                    {positionQuestionLabel(book.format_type)}
+                  </label>
+                  <input
+                    id={`pos-${book.book_id}`}
+                    type="number"
+                    inputMode={positionInputMode(book.format_type)}
+                    value={inputs[book.book_id] ?? ""}
+                    onChange={(e) => handleChange(book, e.target.value)}
+                    className="w-full rounded-lg border border-hairline bg-card px-4 py-3 text-center text-2xl text-ink outline-none focus:ring-2 focus:ring-accent/40"
+                  />
+                  {errors[book.book_id] && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors[book.book_id]}</p>
+                  )}
+                  {deltaDisplay(book) && (
+                    <p className="mt-1 text-sm font-medium text-accent">{deltaDisplay(book)}</p>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || loggableEntries.length === 0}
+          className="w-full rounded-full bg-accent py-4 text-lg font-semibold text-on-accent shadow-sm transition disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+
+        {todayTotal !== null && (
+          <p className="text-center text-sm text-ink-faint">Today&apos;s total: {todayTotal} pages</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { computeAvgPagesPerDay } from "@/app/shared/avgPagesPerDay";
-import { daysBetweenInclusive } from "@/app/shared/isoDate";
+import { daysBetweenInclusive, todayLocalIso } from "@/app/shared/isoDate";
 
 // Housekeeping for completing the ceremony: status='read', year_read
 // derived from date_finished (defaulting to today if somehow still unset),
@@ -27,11 +27,11 @@ export async function POST(
     await client.query("BEGIN");
 
     const { rows: bookRows } = await client.query(
-      `select to_char(coalesce(date_finished, current_date), 'YYYY-MM-DD') as date_finished,
+      `select to_char(coalesce(date_finished, $2::date), 'YYYY-MM-DD') as date_finished,
               to_char(date_started, 'YYYY-MM-DD') as date_started,
               word_count::float8 as word_count
        from books where book_id = $1 for update`,
-      [bookIdNum]
+      [bookIdNum, todayLocalIso()]
     );
     if (bookRows.length === 0) {
       await client.query("ROLLBACK");

@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { addIsoDays, todayLocalIso } from "../shared/isoDate";
 import { LogView } from "./LogView";
 import type { CurrentBookForLog, DailyReadingRow } from "./types";
 
@@ -19,6 +20,7 @@ async function getCurrentBooks(): Promise<CurrentBookForLog[]> {
 }
 
 async function getRecentDailyReading(): Promise<DailyReadingRow[]> {
+  const cutoff = addIsoDays(todayLocalIso(), -30);
   const { rows } = await pool.query<DailyReadingRow>(
     `select
        dr.id, dr.book_id, dr.pages,
@@ -26,8 +28,9 @@ async function getRecentDailyReading(): Promise<DailyReadingRow[]> {
        b.title as book_title
      from daily_reading dr
      left join books b on b.book_id = dr.book_id
-     where dr.date >= current_date - interval '30 days'
-     order by dr.date desc, b.title asc nulls last`
+     where dr.date >= $1
+     order by dr.date desc, b.title asc nulls last`,
+    [cutoff]
   );
   return rows;
 }

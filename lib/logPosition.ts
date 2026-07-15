@@ -19,11 +19,12 @@ export async function logForwardProgress(
   newPosition: number,
   currentPosition: number,
   formatType: string | null,
-  pageCount: number | null
+  pageCount: number | null,
+  date: string
 ): Promise<LogPositionResult> {
   const { rows: todayRows } = await client.query(
-    `select pages from daily_reading where date = current_date and book_id = $1`,
-    [bookId]
+    `select pages from daily_reading where date = $1 and book_id = $2`,
+    [date, bookId]
   );
   const alreadyLoggedToday = todayRows[0]?.pages ?? 0;
   const baseline = currentPosition - alreadyLoggedToday;
@@ -39,9 +40,9 @@ export async function logForwardProgress(
 
   await client.query(
     `insert into daily_reading (date, book_id, pages)
-     values (current_date, $1, $2)
+     values ($1, $2, $3)
      on conflict (date, book_id) do update set pages = excluded.pages`,
-    [bookId, delta]
+    [date, bookId, delta]
   );
   await client.query(`update current_books set position = $1 where book_id = $2`, [newPosition, bookId]);
 

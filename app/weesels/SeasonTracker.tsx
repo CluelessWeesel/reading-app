@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { fraunces } from "../shared/fonts";
 import { CoverThumb } from "../shared/CoverThumb";
-import { daysBetweenInclusive } from "../shared/isoDate";
+import { daysBetweenInclusive, todayLocalIso } from "../shared/isoDate";
 import { getCategories } from "./data";
 import {
   getAuthorsFirstReadThisYear,
@@ -42,7 +42,7 @@ export async function SeasonTracker({ year }: { year: number }) {
   const activeCategories = categories.filter((c) => c.active);
   const statuses = await getCategoryStatuses(year, activeCategories);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const daysUntil = daysBetweenInclusive(today, `${year}-12-25`) - 1;
 
   return (

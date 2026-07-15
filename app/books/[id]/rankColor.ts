@@ -17,12 +17,17 @@ function relativeLuminance(r: number, g: number, b: number): number {
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
-export function rankColor(rank: number, total: number): { background: string; color: string } {
-  const percentile = total > 1 ? 1 - (rank - 1) / (total - 1) : 1; // 1 = best (rank 1), 0 = worst
+// percentile: 1 = best (green), 0 = worst (red).
+export function percentileColor(percentile: number): { background: string; color: string } {
   const r = lerp(WORST.r, BEST.r, percentile);
   const g = lerp(WORST.g, BEST.g, percentile);
   const b = lerp(WORST.b, BEST.b, percentile);
   const background = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   const color = relativeLuminance(r, g, b) > 150 ? "#2b1c0e" : "#fff8ec";
   return { background, color };
+}
+
+export function rankColor(rank: number, total: number): { background: string; color: string } {
+  const percentile = total > 1 ? 1 - (rank - 1) / (total - 1) : 1; // 1 = best (rank 1), 0 = worst
+  return percentileColor(percentile);
 }

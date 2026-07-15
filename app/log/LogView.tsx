@@ -29,17 +29,7 @@ export function LogView({
     setCurrentBooks((prev) => prev.map((b) => (b.book_id === bookId ? { ...b, cover_url: coverUrl } : b)));
   }
 
-  function handleTonightUpdated(updates: { book_id: number; position: number }[]) {
-    const todayIso = new Date().toISOString().slice(0, 10);
-    setCurrentBooks((prev) =>
-      prev.map((b) => {
-        const u = updates.find((x) => x.book_id === b.book_id);
-        return u ? { ...b, position: u.position, last_log_date: todayIso } : b;
-      })
-    );
-  }
-
-  function handleBackfillUpdated(
+  function handleBooksUpdated(
     updates: { book_id: number; position: number; last_log_date: string }[]
   ) {
     setCurrentBooks((prev) =>
@@ -48,6 +38,10 @@ export function LogView({
         return u ? { ...b, position: u.position, last_log_date: u.last_log_date } : b;
       })
     );
+  }
+
+  function handlePositionUpdated(bookId: number, position: number) {
+    setCurrentBooks((prev) => prev.map((b) => (b.book_id === bookId ? { ...b, position } : b)));
   }
 
   return (
@@ -74,18 +68,18 @@ export function LogView({
         {tab === "tonight" && (
           <TonightTab
             currentBooks={currentBooks}
-            onBooksUpdated={handleTonightUpdated}
+            onBooksUpdated={handleBooksUpdated}
             onCoverChange={handleCoverChange}
           />
         )}
         {tab === "backfill" && (
           <BackfillTab
             currentBooks={currentBooks}
-            onBooksUpdated={handleBackfillUpdated}
+            onBooksUpdated={handleBooksUpdated}
             onCoverChange={handleCoverChange}
           />
         )}
-        {tab === "edit" && <EditTab initialRows={recentRows} />}
+        {tab === "edit" && <EditTab initialRows={recentRows} onPositionUpdated={handlePositionUpdated} />}
       </div>
     </div>
   );

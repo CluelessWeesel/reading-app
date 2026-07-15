@@ -4,6 +4,7 @@ import { pool } from "@/lib/db";
 import { fraunces } from "@/app/shared/fonts";
 import { getCategories, getWeeselRows } from "@/app/weesels/data";
 import { categoryNameOf, creditedAuthorId } from "@/app/weesels/weeselMath";
+import { todayLocalIso } from "@/app/shared/isoDate";
 import { AuthorHeader } from "./AuthorHeader";
 import { Bookshelf } from "./Bookshelf";
 import { QueuedStrip } from "./QueuedStrip";
@@ -155,7 +156,7 @@ export default async function AuthorDetailPage({ params }: { params: Promise<{ i
     rankByScore != null && totalAuthorsByScore > 1 ? 1 - (rankByScore - 1) / (totalAuthorsByScore - 1) : null;
   const percentOfEverything = grandTotalPages > 0 ? (totalPages / grandTotalPages) * 100 : null;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const minis = computeMinis(books, rankings, author.name, today);
   const scoreArc = computeScoreArc(books);
   const timeline = computeTimeline(books);

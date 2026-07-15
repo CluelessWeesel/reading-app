@@ -9,6 +9,7 @@ import { EditBookModal } from "./EditBookModal";
 import { FinishBookCeremony } from "./finish-ceremony/FinishBookCeremony";
 import { FORMAT_LABELS } from "./formatLabels";
 import { fraunces } from "./fonts";
+import { todayLocalIso } from "./isoDate";
 
 type CurrentBook = Book & { position: number };
 
@@ -72,7 +73,7 @@ export function CurrentlyReadingPanel() {
     const res = await fetch(`/api/current-books/${bookId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ position: value }),
+      body: JSON.stringify({ position: value, date: todayLocalIso() }),
     });
     if (res.ok) refresh();
   }

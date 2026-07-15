@@ -14,16 +14,20 @@ export async function POST(request: NextRequest) {
     !body ||
     typeof body !== "object" ||
     typeof (body as Record<string, unknown>).date !== "string" ||
+    typeof (body as Record<string, unknown>).today !== "string" ||
     !Array.isArray((body as Record<string, unknown>).entries)
   ) {
-    return NextResponse.json({ error: "Expected { date, entries: [...] }" }, { status: 400 });
+    return NextResponse.json({ error: "Expected { date, today, entries: [...] }" }, { status: 400 });
   }
 
   const targetDate = (body as { date: string }).date;
+  // The client's own local calendar date, not Postgres's current_date --
+  // see app/api/log/route.ts for why current_date (UTC on Supabase) is wrong
+  // for a timezone ahead of UTC.
+  const today = (body as { today: string }).today;
   const entries = (body as { entries: unknown[] }).entries;
 
-  const { rows: todayRows } = await pool.query(`select to_char(current_date, 'YYYY-MM-DD') as today`);
-  if (targetDate >= todayRows[0].today) {
+  if (targetDate >= today) {
     return NextResponse.json({ error: "Backfill date must be before today." }, { status: 400 });
   }
   const results: EntryResult[] = [];

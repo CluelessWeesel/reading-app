@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { fraunces } from "../shared/fonts";
+import { DailyLogSection } from "./DailyLogSection";
 import { DistributionsSection } from "./DistributionsSection";
 import { LeaderboardsSection } from "./LeaderboardsSection";
 import { MonthlyVolumeSection } from "./MonthlyVolumeSection";
@@ -46,11 +47,12 @@ export function StatsView({
   const [goals, setGoals] = useState(initialGoals);
   const [appSettings, setAppSettings] = useState(initialAppSettings);
   const [scope, setScope] = useState<Scope>({ kind: "year", year: currentYear });
-  const [view, setView] = useState<"graphs" | "boards">(() =>
-    searchParams.get("view") === "boards" ? "boards" : "graphs"
-  );
+  const [view, setView] = useState<"graphs" | "boards" | "daily">(() => {
+    const v = searchParams.get("view");
+    return v === "boards" || v === "daily" ? v : "graphs";
+  });
 
-  function changeView(v: "graphs" | "boards") {
+  function changeView(v: "graphs" | "boards" | "daily") {
     setView(v);
     const params = new URLSearchParams(searchParams.toString());
     if (v === "graphs") params.delete("view");
@@ -162,6 +164,18 @@ export function StatsView({
           >
             Boards & Records
           </button>
+          <button
+            type="button"
+            onClick={() => changeView("daily")}
+            aria-pressed={view === "daily"}
+            className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
+              view === "daily"
+                ? "border-accent bg-accent text-on-accent shadow-sm"
+                : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+            }`}
+          >
+            Daily Log
+          </button>
         </div>
 
         {view === "graphs" && (
@@ -204,6 +218,8 @@ export function StatsView({
             />
           </>
         )}
+
+        {view === "daily" && <DailyLogSection dailyRows={dailyRows} today={today} currentYear={currentYear} scope={scope} />}
       </div>
     </div>
   );

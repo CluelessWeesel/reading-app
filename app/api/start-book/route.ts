@@ -13,11 +13,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { source, tbrId, title, author, format_type, word_count, page_count } =
+  const { source, tbrId, title, author, format_type, word_count, page_count, date_started } =
     body as Record<string, unknown>;
 
   if (typeof format_type !== "string" || !FORMAT_TYPES.has(format_type)) {
     return NextResponse.json({ error: "Format type must be audio, physical, or ebook." }, { status: 400 });
+  }
+  // The client's own local calendar date -- see app/api/log/route.ts for why
+  // Postgres's current_date (UTC on Supabase) is wrong for a timezone ahead
+  // of UTC.
+  if (typeof date_started !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date_started)) {
+    return NextResponse.json({ error: "Expected date_started in YYYY-MM-DD format." }, { status: 400 });
   }
   if (word_count != null && (!isFiniteNumber(word_count) || word_count < 0)) {
     return NextResponse.json({ error: "Word count must be a non-negative number." }, { status: 400 });
@@ -69,9 +75,9 @@ export async function POST(request: NextRequest) {
 
     const { rows: bookRows } = await client.query(
       `insert into books (title, author, genre, format_type, word_count, page_count, status, date_started, reread)
-       values ($1, $2, $3, $4, $5, $6, 'reading', current_date, false)
+       values ($1, $2, $3, $4, $5, $6, 'reading', $7, false)
        returning book_id`,
-      [bookTitle, bookAuthor, bookGenre, format_type, bookWordCount, page_count ?? null]
+      [bookTitle, bookAuthor, bookGenre, format_type, bookWordCount, page_count ?? null, date_started]
     );
     const bookId = bookRows[0].book_id;
 

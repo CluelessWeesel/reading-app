@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { pool } from "@/lib/db";
 import { fraunces } from "./shared/fonts";
 import { rankColor } from "./books/[id]/rankColor";
-import { daysBetweenInclusive } from "./shared/isoDate";
+import { daysBetweenInclusive, todayLocalIso } from "./shared/isoDate";
 import { estimateFinishDate, percentComplete } from "./home/homeMath";
 import { RightNowWidget } from "./home/RightNowWidget";
 import { OnTrackWidget } from "./home/OnTrackWidget";
@@ -198,7 +198,7 @@ async function getShelfPick(): Promise<ShelfPick> {
 }
 
 export default async function HomePage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const currentYear = Number(today.slice(0, 4));
   const yearStart = `${currentYear}-01-01`;
 

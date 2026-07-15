@@ -23,13 +23,18 @@ export async function PATCH(
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const { position, format_type } = body as Record<string, unknown>;
+  const { position, format_type, date } = body as Record<string, unknown>;
 
   if (position !== undefined && (!isFiniteNumber(position) || position < 0)) {
     return NextResponse.json({ error: "Position must be a non-negative number." }, { status: 400 });
   }
   if (format_type !== undefined && (typeof format_type !== "string" || !FORMAT_TYPES.has(format_type))) {
     return NextResponse.json({ error: "Format type must be audio, physical, or ebook." }, { status: 400 });
+  }
+  // The client sends its own local calendar date -- see app/api/log/route.ts
+  // for why this can't just be Postgres's current_date.
+  if (position !== undefined && (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
+    return NextResponse.json({ error: "Expected a date in YYYY-MM-DD format." }, { status: 400 });
   }
 
   if (position === undefined && format_type === undefined) {
@@ -57,7 +62,15 @@ export async function PATCH(
       if (position > currentPosition) {
         // Forward progress -- log it, same as the nightly /log flow, so
         // quick-updating your page here shows up in the log's Edit tab too.
-        const result = await logForwardProgress(client, bookIdNum, position, currentPosition, formatType, pageCount);
+        const result = await logForwardProgress(
+          client,
+          bookIdNum,
+          position,
+          currentPosition,
+          formatType,
+          pageCount,
+          date as string
+        );
         if (!result.ok) {
           await client.query("ROLLBACK");
           return NextResponse.json({ error: result.error }, { status: result.status });

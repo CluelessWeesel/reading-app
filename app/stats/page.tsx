@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { todayLocalIso } from "@/app/shared/isoDate";
 import { StatsView } from "./StatsView";
 import type { BookSummary, DailyRow, FormatDailyRow, Goal, SeriesParent, TbrEntry } from "./types";
 
@@ -106,7 +107,7 @@ async function getAllGenres(): Promise<string[]> {
 }
 
 export default async function StatsPage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const currentYear = Number(today.slice(0, 4));
 
   const [

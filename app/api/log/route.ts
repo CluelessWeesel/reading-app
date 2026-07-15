@@ -14,6 +14,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Expected { entries: [...] }" }, { status: 400 });
   }
 
+  // The client sends its own local calendar date rather than relying on
+  // Postgres's current_date, which reflects the DB session's timezone (UTC
+  // on Supabase) -- for timezones ahead of UTC that rolls over hours after
+  // local midnight, silently misdating anything logged that morning.
+  const date = (body as Record<string, unknown>).date;
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json({ error: "Expected a date in YYYY-MM-DD format." }, { status: 400 });
+  }
+
   const entries = (body as { entries: unknown[] }).entries;
   const results: EntryResult[] = [];
 
@@ -62,7 +71,8 @@ export async function POST(request: NextRequest) {
         newPosition,
         currentPosition,
         formatType,
-        pageCount
+        pageCount,
+        date
       );
       if (!result.ok) {
         await client.query("ROLLBACK");
@@ -82,7 +92,8 @@ export async function POST(request: NextRequest) {
   }
 
   const { rows: totalRows } = await pool.query(
-    `select coalesce(sum(pages), 0)::int as total from daily_reading where date = current_date`
+    `select coalesce(sum(pages), 0)::int as total from daily_reading where date = $1`,
+    [date]
   );
 
   return NextResponse.json({ results, today_total: totalRows[0].total });

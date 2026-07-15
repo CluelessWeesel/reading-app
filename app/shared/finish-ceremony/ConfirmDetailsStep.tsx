@@ -5,6 +5,7 @@ import { fetchBookMetadata } from "../bookMetadata";
 import type { Book } from "../bookTypes";
 import { fieldClass, modalLabelClass } from "../formControls";
 import { FORMAT_LABELS } from "../formatLabels";
+import { todayLocalIso } from "../isoDate";
 import { CeremonyStepShell } from "./CeremonyStepShell";
 
 type FormState = {
@@ -25,10 +26,6 @@ type FormState = {
   isbn: string;
 };
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function toFormState(book: Book): FormState {
   return {
     title: book.title,
@@ -44,7 +41,7 @@ function toFormState(book: Book): FormState {
     narrator: book.narrator ?? "",
     reread: book.reread,
     date_started: book.date_started ?? "",
-    date_finished: book.date_finished ?? todayIso(),
+    date_finished: book.date_finished ?? todayLocalIso(),
     isbn: book.isbn ?? "",
   };
 }

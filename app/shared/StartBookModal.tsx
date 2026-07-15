@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fraunces } from "./fonts";
 import { fieldClass, modalLabelClass } from "./formControls";
+import { todayLocalIso } from "./isoDate";
 import { titleSortKey } from "./titleSortKey";
 
 type TbrOption = {
@@ -105,6 +106,7 @@ export function StartBookModal({
             format_type: formatType,
             word_count: wordCount.trim() ? Number(wordCount) : null,
             page_count: pageCount.trim() ? Number(pageCount) : null,
+            date_started: todayLocalIso(),
           }
         : {
             source: "new",
@@ -113,6 +115,7 @@ export function StartBookModal({
             format_type: formatType,
             word_count: wordCount.trim() ? Number(wordCount) : null,
             page_count: pageCount.trim() ? Number(pageCount) : null,
+            date_started: todayLocalIso(),
           };
 
     try {
