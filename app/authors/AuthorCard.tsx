@@ -7,7 +7,7 @@ export function AuthorCard({ author }: { author: AuthorSummary }) {
   const vitals = [
     `${author.booksCount} book${author.booksCount === 1 ? "" : "s"}`,
     author.totalPages > 0 ? `${author.totalPages.toLocaleString()} pages` : null,
-    author.avgScore != null ? `${author.avgScore.toFixed(1)} avg` : null,
+    author.avgScore != null ? `${author.avgScore.toFixed(2)} avg` : null,
   ]
     .filter(Boolean)
     .join(" · ");

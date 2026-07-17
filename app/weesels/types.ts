@@ -20,6 +20,8 @@ export type WeeselRow = {
   cover_url: string | null;
   book_author: string | null;
   book_author_id: number | null;
+  book_genre: string | null;
+  book_format_type: string | null;
   // Fallback author-id resolution for categories with no book_id -- see
   // weeselMath.ts's creditedAuthorId.
   nominee_author_id: number | null;

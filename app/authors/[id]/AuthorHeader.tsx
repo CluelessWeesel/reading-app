@@ -47,7 +47,7 @@ export function AuthorHeader({
     `${booksCount} book${booksCount === 1 ? "" : "s"}`,
     totalPages > 0 ? `${totalPages.toLocaleString()} pages` : null,
     totalWords > 0 ? `${Math.round(totalWords).toLocaleString()} words` : null,
-    avgScore != null ? `${avgScore.toFixed(1)} avg` : null,
+    avgScore != null ? `${avgScore.toFixed(2)} avg` : null,
   ].filter(Boolean);
 
   return (

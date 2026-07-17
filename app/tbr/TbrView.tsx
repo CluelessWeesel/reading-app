@@ -57,6 +57,19 @@ function CartIcon({ className }: { className?: string }) {
   );
 }
 
+// "Date added" means something different per shelf now: when a book became
+// owned, or when it became unowned, tracked independently (see
+// supabase/migrations/0023_tbr_owned_dates.sql). Since a sorted view is
+// always already filtered to one shelf, every entry being compared shares
+// the same owned state -- so the right column falls out of the entry
+// itself, no need to thread the active shelf into the comparator. Falls
+// back to created_at for rows that predate this and haven't been backfilled.
+function effectiveAddedDate(e: TbrEntry): string {
+  if (e.owned === true) return e.owned_added_at ?? e.created_at;
+  if (e.owned === false) return e.unowned_added_at ?? e.created_at;
+  return e.created_at;
+}
+
 const SORTS = {
   title: {
     label: "Title (A–Z)",
@@ -78,6 +91,14 @@ const SORTS = {
   page_count: {
     label: "Page count (highest)",
     compare: (a: TbrEntry, b: TbrEntry) => (b.page_count ?? -1) - (a.page_count ?? -1),
+  },
+  date_added_newest: {
+    label: "Date added (newest)",
+    compare: (a: TbrEntry, b: TbrEntry) => effectiveAddedDate(b).localeCompare(effectiveAddedDate(a)),
+  },
+  date_added_oldest: {
+    label: "Date added (oldest)",
+    compare: (a: TbrEntry, b: TbrEntry) => effectiveAddedDate(a).localeCompare(effectiveAddedDate(b)),
   },
 } as const;
 

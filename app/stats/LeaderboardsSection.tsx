@@ -28,7 +28,15 @@ function BookTitle({ entry }: { entry: LeaderboardEntry }) {
   );
 }
 
-function MinBooksToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+function MinBooksToggle({
+  on,
+  onToggle,
+  label = "2+ books",
+}: {
+  on: boolean;
+  onToggle: () => void;
+  label?: string;
+}) {
   return (
     <button
       type="button"
@@ -38,7 +46,7 @@ function MinBooksToggle({ on, onToggle }: { on: boolean; onToggle: () => void })
         on ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
       }`}
     >
-      2+ books
+      {label}
     </button>
   );
 }
@@ -118,10 +126,14 @@ function BookPaceCard({
   combined,
   physical,
   audio,
+  indieOnly,
+  onToggleIndie,
 }: {
   combined: LeaderboardEntry[];
   physical: LeaderboardEntry[];
   audio: LeaderboardEntry[];
+  indieOnly: boolean;
+  onToggleIndie: () => void;
 }) {
   const [mode, setMode] = useState<"combined" | "split">("combined");
 
@@ -136,6 +148,7 @@ function BookPaceCard({
         <button type="button" onClick={() => setMode("split")} aria-pressed={mode === "split"} className={pillClass(mode === "split")}>
           Split by format
         </button>
+        <MinBooksToggle on={indieOnly} onToggle={onToggleIndie} label="Indie only" />
       </div>
 
       {mode === "combined" ? (
@@ -176,6 +189,7 @@ export function LeaderboardsSection({
 }) {
   const [authorMinBooksOn, setAuthorMinBooksOn] = useState(true);
   const [seriesMinBooksOn, setSeriesMinBooksOn] = useState(true);
+  const [bookPaceIndieOnly, setBookPaceIndieOnly] = useState(false);
   const [seriesLevelFilter, setSeriesLevelFilter] = useState<SeriesLevelFilter>("all");
   const [genreDimension, setGenreDimension] = useState<"genre" | "subgenre">("genre");
   const [genreMinBooksOn, setGenreMinBooksOn] = useState(true);
@@ -229,13 +243,14 @@ export function LeaderboardsSection({
   );
 
   const bookPaceBoards = useMemo(() => {
+    const src = bookPaceIndieOnly ? scopedBooks.filter((b) => b.indie === true) : scopedBooks;
     const byFormat: Record<BookFormatFilter, LeaderboardEntry[]> = {
-      all: computeBookPaceLeaderboard(scopedBooks, "all"),
-      physical: computeBookPaceLeaderboard(scopedBooks, "physical"),
-      audio: computeBookPaceLeaderboard(scopedBooks, "audio"),
+      all: computeBookPaceLeaderboard(src, "all"),
+      physical: computeBookPaceLeaderboard(src, "physical"),
+      audio: computeBookPaceLeaderboard(src, "audio"),
     };
     return byFormat;
-  }, [scopedBooks]);
+  }, [scopedBooks, bookPaceIndieOnly]);
 
   return (
     <SectionShell title="Leaderboards">
@@ -264,7 +279,13 @@ export function LeaderboardsSection({
             onChange: (key) => setSeriesLevelFilter(key as SeriesLevelFilter),
           }}
         />
-        <BookPaceCard combined={bookPaceBoards.all} physical={bookPaceBoards.physical} audio={bookPaceBoards.audio} />
+        <BookPaceCard
+          combined={bookPaceBoards.all}
+          physical={bookPaceBoards.physical}
+          audio={bookPaceBoards.audio}
+          indieOnly={bookPaceIndieOnly}
+          onToggleIndie={() => setBookPaceIndieOnly((v) => !v)}
+        />
 
         <LeaderboardCard
           title="Genre"

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { fraunces } from "../shared/fonts";
 import { getCategories, getSealedYears, getWeeselRows } from "./data";
 import { HallOfFame } from "./HallOfFame";
@@ -39,9 +40,17 @@ export default async function WeeselsPage() {
   return (
     <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-6">
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>The Weesels</h1>
-          <p className="mt-1 text-sm text-ink-faint">The annual reading awards, archived.</p>
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>The Weesels</h1>
+            <p className="mt-1 text-sm text-ink-faint">The annual reading awards, archived.</p>
+          </div>
+          <Link
+            href="/weesels/leaderboard"
+            className="rounded-full border border-hairline bg-card/70 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-hover hover:text-ink"
+          >
+            Author wins leaderboard &rarr;
+          </Link>
         </header>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

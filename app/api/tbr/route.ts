@@ -48,14 +48,20 @@ export async function POST(request: NextRequest) {
   const genreVal = typeof genre === "string" ? genre.trim() || null : null;
   const subgenreVal = typeof subgenre === "string" ? subgenre.trim() || null : null;
   const ownedFormatVal = typeof owned_or_format === "string" ? owned_or_format.trim() || null : null;
+  const ownedVal: boolean | null = typeof owned === "boolean" ? owned : null;
 
   try {
     const { rows } = await pool.query(
-      `insert into tbr (title, author, genre, subgenre, word_count, page_count, owned_or_format, owned)
-       values ($1, $2, $3, $4, $5, $6, $7, $8)
+      `insert into tbr (title, author, genre, subgenre, word_count, page_count, owned_or_format, owned,
+         owned_added_at, unowned_added_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8,
+         case when $8 = true then now() else null end,
+         case when $8 = false then now() else null end)
        returning id, title, author, genre, subgenre, word_count, page_count, owned_or_format, cover_url, owned,
-         to_char(created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at`,
-      [title.trim(), authorVal, genreVal, subgenreVal, word_count ?? null, page_count ?? null, ownedFormatVal, owned ?? null]
+         to_char(created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
+         to_char(owned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as owned_added_at,
+         to_char(unowned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as unowned_added_at`,
+      [title.trim(), authorVal, genreVal, subgenreVal, word_count ?? null, page_count ?? null, ownedFormatVal, ownedVal]
     );
     return NextResponse.json(rows[0], { status: 201 });
   } catch (err) {

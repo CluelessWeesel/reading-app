@@ -4,13 +4,14 @@ export type HonourItem = { year: number; category: string; result: "winner" | "n
 
 // The one shared crown/laurel visual, reused everywhere a book or author's
 // weesels history surfaces (rankings rows, author/book headers, home). A
-// win shows 🏆 with a count; nominations-only show a subtler laurel. Both
-// share one InfoTooltip listing every year/category on hover or tap.
+// win shows 🏆 with a count; the laurel shows total nominations -- wins
+// included, same "N wins from M nominations" convention real awards use, not
+// just the ones that didn't win. Both share one InfoTooltip listing every
+// year/category on hover or tap.
 export function HonourBadge({ items }: { items: HonourItem[] }) {
   if (items.length === 0) return null;
 
   const wins = items.filter((i) => i.result === "winner");
-  const noms = items.filter((i) => i.result !== "winner");
 
   const tooltipText = items
     .slice()
@@ -21,7 +22,7 @@ export function HonourBadge({ items }: { items: HonourItem[] }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-ink-faint">
       {wins.length > 0 && <span className="font-medium text-ink">🏆 {wins.length}</span>}
-      {noms.length > 0 && <span>🏵️ {noms.length}</span>}
+      <span>🏵️ {items.length}</span>
       <InfoTooltip text={tooltipText} />
     </span>
   );

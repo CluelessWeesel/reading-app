@@ -16,7 +16,7 @@ import { PaceChart } from "./PaceChart";
 import { DailyPagesChart } from "./DailyPagesChart";
 import { rankColor } from "./rankColor";
 import { EditModalProvider } from "./EditModalProvider";
-import { EditTrigger } from "./EditTrigger";
+import { ReviewTrigger } from "./ReviewTrigger";
 
 export const dynamic = "force-dynamic";
 
@@ -241,19 +241,28 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             </div>
           )}
 
-          <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-            <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink`}>Review</h2>
-            {book.review ? (
-              <p className="whitespace-pre-wrap text-ink">{book.review}</p>
-            ) : (
-              <p className="text-sm text-ink-faint">
-                No review yet.{" "}
-                <EditTrigger className="underline decoration-dotted underline-offset-4 hover:text-ink">
-                  Add one
-                </EditTrigger>
-              </p>
-            )}
-          </div>
+          {book.status !== "reading" && (
+            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <h2 className={`${fraunces.className} text-lg font-semibold text-ink`}>Review</h2>
+                {book.review && (
+                  <ReviewTrigger className="text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink">
+                    Edit
+                  </ReviewTrigger>
+                )}
+              </div>
+              {book.review ? (
+                <p className="whitespace-pre-wrap text-ink">{book.review}</p>
+              ) : (
+                <p className="text-sm text-ink-faint">
+                  No review yet.{" "}
+                  <ReviewTrigger className="underline decoration-dotted underline-offset-4 hover:text-ink">
+                    Add one
+                  </ReviewTrigger>
+                </p>
+              )}
+            </div>
+          )}
 
           {book.legacy_notes && (
             <div className="rounded-2xl border border-hairline bg-card/40 p-5">

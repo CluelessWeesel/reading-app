@@ -38,7 +38,7 @@ async function getFormatDailyRows(today: string): Promise<FormatDailyRow[]> {
 async function getBooks(): Promise<Omit<BookSummary, "percentile" | "ratingsCount" | "promptAnswersCount">[]> {
   const { rows } = await pool.query<Omit<BookSummary, "percentile" | "ratingsCount" | "promptAnswersCount">>(
     `select book_id, title, cover_url, year_read, author, author_id::int as author_id, series, genre, subgenre, narrator,
-            year_released, page_count, format_type, format_raw, review,
+            year_released, page_count, format_type, format_raw, review, indie,
             word_count::float8 as word_count, score::float8 as score,
             avg_pages_per_day::float8 as avg_pages_per_day,
             to_char(date_started, 'YYYY-MM-DD') as date_started,

@@ -9,5 +9,7 @@ export type TbrEntry = {
   genre: string | null;
   cover_url: string | null;
   created_at: string;
+  owned_added_at: string | null;
+  unowned_added_at: string | null;
   owned: boolean | null;
 };

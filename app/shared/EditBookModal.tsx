@@ -28,6 +28,7 @@ type FormState = {
   date_finished: string;
   isbn: string;
   status: string;
+  review: string;
 };
 
 function toFormState(book: Book): FormState {
@@ -53,6 +54,7 @@ function toFormState(book: Book): FormState {
     date_finished: book.date_finished ?? "",
     isbn: book.isbn ?? "",
     status: book.status ?? "",
+    review: book.review ?? "",
   };
 }
 
@@ -135,6 +137,19 @@ export function EditBookModal({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // A book only carries status='reading' while it's in current_books (set by
+  // start-book, cleared by finish/DNF) -- the one reliable signal for "still
+  // in progress" available here. Reviewing something you haven't finished
+  // doesn't make sense, so that field is hidden entirely while reading.
+  // Predicted score/margin are a guess made *before* you know the outcome;
+  // once a book is done (finished or DNF) there's nothing left to predict --
+  // hidden for anything completed from now on, except books that already
+  // carry a predicted value from before this rule existed, kept visible so
+  // that old data stays viewable/backfillable rather than silently hidden.
+  const isCurrentlyReading = book.status === "reading";
+  const showReview = !isCurrentlyReading;
+  const showPredicted = isCurrentlyReading || book.predicted_score != null || book.predicted_margin != null;
+
   async function handleDelete() {
     if (
       !window.confirm(
@@ -206,6 +221,7 @@ export function EditBookModal({
           date_finished: form.date_finished || null,
           isbn: form.isbn.trim() || null,
           status: form.status.trim() || null,
+          review: form.review.trim() || null,
         }),
       });
 
@@ -425,34 +441,36 @@ export function EditBookModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={modalLabelClass()} htmlFor="field-predicted-score">Predicted score</label>
-              <input
-                id="field-predicted-score"
-                className={fieldClass()}
-                type="number"
-                step="0.5"
-                min="0.5"
-                max="5"
-                value={form.predicted_score}
-                onChange={(e) => set("predicted_score", e.target.value)}
-              />
+          {showPredicted && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={modalLabelClass()} htmlFor="field-predicted-score">Predicted score</label>
+                <input
+                  id="field-predicted-score"
+                  className={fieldClass()}
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="5"
+                  value={form.predicted_score}
+                  onChange={(e) => set("predicted_score", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={modalLabelClass()} htmlFor="field-predicted-margin">Predicted margin (±)</label>
+                <input
+                  id="field-predicted-margin"
+                  className={fieldClass()}
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="4.5"
+                  value={form.predicted_margin}
+                  onChange={(e) => set("predicted_margin", e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <label className={modalLabelClass()} htmlFor="field-predicted-margin">Predicted margin (±)</label>
-              <input
-                id="field-predicted-margin"
-                className={fieldClass()}
-                type="number"
-                step="0.1"
-                min="0"
-                max="4.5"
-                value={form.predicted_margin}
-                onChange={(e) => set("predicted_margin", e.target.value)}
-              />
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -523,6 +541,19 @@ export function EditBookModal({
               </label>
             </div>
           </div>
+
+          {showReview && (
+            <div>
+              <label className={modalLabelClass()} htmlFor="field-review">Review</label>
+              <textarea
+                id="field-review"
+                className={`${fieldClass()} min-h-24`}
+                value={form.review}
+                onChange={(e) => set("review", e.target.value)}
+                placeholder="No review yet."
+              />
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

@@ -7,7 +7,9 @@ export const dynamic = "force-dynamic";
 async function getEntries(): Promise<TbrEntry[]> {
   const { rows } = await pool.query<TbrEntry>(
     `select id, title, author, owned_or_format, subgenre, genre, word_count, page_count, cover_url, owned,
-            to_char(created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
+            to_char(created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
+            to_char(owned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as owned_added_at,
+            to_char(unowned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as unowned_added_at
      from tbr
      order by title asc`
   );

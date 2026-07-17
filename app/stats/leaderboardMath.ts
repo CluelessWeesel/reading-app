@@ -31,6 +31,10 @@ export type LeaderboardEntry = {
   primaryLabel: string;
   secondaryLabel: string;
   sortValue: number;
+  // Only populated for avgScore -- breaks ties in average rating by average
+  // percentile (see the author dossier page's getRankByScore for the same
+  // convention). Unused by every other metric.
+  tiebreak?: number;
 };
 
 function fmtPages(n: number): string {
@@ -77,22 +81,45 @@ function buildEntriesForMetric(groups: Group[], metric: MetricKey, minSampleBook
       const totalPages = books.reduce((sum, b) => sum + b.page_count, 0);
       entries.push({ name: g.name, primaryLabel: fmtBooks(books.length), secondaryLabel: fmtPages(totalPages), sortValue: books.length });
     } else if (metric === "avgScore") {
+      // The min-books threshold gates on the group's real book count (what
+      // "2+ books" actually means), not on how many of those happen to have
+      // a score -- otherwise an author with 2 real books but only 1 scored
+      // one (e.g. a book finished before scoring existed) reads as having
+      // just 1 book and gets dropped by a filter that's supposed to be about
+      // their total output, not this metric's data completeness.
+      if (books.length < minSampleBooks) continue;
       const scored = books.filter((b) => b.score != null);
-      if (scored.length === 0 || scored.length < minSampleBooks) continue;
+      if (scored.length === 0) continue;
       const avg = scored.reduce((sum, b) => sum + (b.score as number), 0) / scored.length;
-      entries.push({ name: g.name, primaryLabel: fmtScore(avg), secondaryLabel: fmtBooks(scored.length), sortValue: avg });
+      // Tie-break: avg percentile across whichever of the group's books have
+      // been ranked (same "average only over ranked books" rule as the
+      // Consistency metric below) -- -1 for groups with no ranked books at
+      // all, so they sort after anyone with real percentile data on a tie.
+      const ranked = books.filter((b) => b.percentile != null);
+      const tiebreak =
+        ranked.length > 0 ? ranked.reduce((sum, b) => sum + (b.percentile as number), 0) / ranked.length : -1;
+      entries.push({
+        name: g.name,
+        primaryLabel: fmtScore(avg),
+        secondaryLabel: fmtBooks(scored.length),
+        sortValue: avg,
+        tiebreak,
+      });
     } else {
       // Raw rank position isn't comparable across years (rank 36 of 58 vs
       // rank 1 of 10 aren't the same "good"), so this averages each book's
-      // percentile within its own year's ranked list instead.
+      // percentile within its own year's ranked list instead. Same
+      // total-vs-subset distinction as avgScore above: eligibility is based
+      // on real book count, the average itself only over the ranked subset.
+      if (books.length < minSampleBooks) continue;
       const ranked = books.filter((b) => b.percentile != null);
-      if (ranked.length === 0 || ranked.length < minSampleBooks) continue;
+      if (ranked.length === 0) continue;
       const avg = ranked.reduce((sum, b) => sum + (b.percentile as number), 0) / ranked.length;
       entries.push({ name: g.name, primaryLabel: fmtPercentile(avg), secondaryLabel: fmtBooks(ranked.length), sortValue: avg });
     }
   }
 
-  entries.sort((a, b) => b.sortValue - a.sortValue);
+  entries.sort((a, b) => b.sortValue - a.sortValue || (b.tiebreak ?? 0) - (a.tiebreak ?? 0));
   return entries;
 }
 
@@ -233,6 +260,6 @@ export function computeBookPaceLeaderboard(
     });
   }
 
-  entries.sort((a, b) => b.sortValue - a.sortValue);
+  entries.sort((a, b) => b.sortValue - a.sortValue || (b.tiebreak ?? 0) - (a.tiebreak ?? 0));
   return entries;
 }

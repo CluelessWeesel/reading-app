@@ -14,7 +14,8 @@
     "backfill:avg-pace": "tsx scripts/backfill-avg-pace.ts",
     "migrate:rambler-reviews": "tsx scripts/migrate-rambler-reviews.ts",
     "backfill:authors": "tsx scripts/backfill-authors.ts",
-    "backfill:weesels": "tsx scripts/backfill-weesels.ts"
+    "backfill:weesels": "tsx scripts/backfill-weesels.ts",
+    "backfill:tbr-date-added": "tsx scripts/backfill-tbr-date-added.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

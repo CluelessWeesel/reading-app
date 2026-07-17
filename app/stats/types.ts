@@ -19,6 +19,7 @@ export type BookSummary = {
   word_count: number | null;
   score: number | null;
   review: string | null;
+  indie: boolean | null;
   format_type: string | null;
   format_raw: string | null;
   date_started: string | null;

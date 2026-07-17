@@ -298,14 +298,31 @@ export function DistributionsSection({
   allGenres: string[];
   scope: Scope;
 }) {
+  const [indieOnly, setIndieOnly] = useState(false);
+
   // Same "only actually-finished books count" rule as Leaderboards.
   const scopedBooks = useMemo(
-    () => books.filter((b) => b.date_finished != null && (scope.kind === "all" || b.year_read === scope.year)),
-    [books, scope]
+    () =>
+      books
+        .filter((b) => b.date_finished != null && (scope.kind === "all" || b.year_read === scope.year))
+        .filter((b) => !indieOnly || b.indie === true),
+    [books, scope, indieOnly]
   );
 
   return (
     <SectionShell title="Distributions">
+      <div className="mb-3 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setIndieOnly((v) => !v)}
+          aria-pressed={indieOnly}
+          className={`rounded-full border px-3 py-1 text-xs transition ${
+            indieOnly ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
+          }`}
+        >
+          Indie only
+        </button>
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <ScoreHistogramCard books={scopedBooks} />
         <BookLengthCard books={scopedBooks} />

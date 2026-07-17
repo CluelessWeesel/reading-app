@@ -28,18 +28,25 @@ export function displayTitle(row: WeeselRow): string {
   return row.book_title ?? row.nominee;
 }
 
-// The person credited for the Hall of Fame's author leaderboard -- resolved
-// via the actual book author wherever a book_id exists (authoritative, and
-// the only way to avoid crediting a narrator for Best Narration), else the
-// nominee text itself for the pure-author categories, else
-// author_or_narrator (Best Series credits the series' author there).
+// The person credited for the Hall of Fame's author leaderboard. Best
+// Narration is an award for the narrator's performance, not the author's
+// writing, so it's credited via author_or_narrator (the narrator) --
+// crediting the book's actual author there would silently hand the
+// narrator's win to someone else. Every other book category credits the
+// actual book author (authoritative); the pure-author categories credit the
+// nominee text itself; Best Series credits the series' author via
+// author_or_narrator. There's no narrators table yet, so a narrator's id
+// stays unresolved (null) until one exists -- the name alone is enough to
+// count and group them correctly today.
 export function creditedAuthorName(row: WeeselRow, categoryName: string): string | null {
+  if (categoryName === "Best Narration") return row.author_or_narrator;
   if (row.book_author != null) return row.book_author;
   if (AUTHOR_NAME_CATEGORIES.has(categoryName)) return row.nominee;
   return row.author_or_narrator;
 }
 
 export function creditedAuthorId(row: WeeselRow, categoryName: string): number | null {
+  if (categoryName === "Best Narration") return row.author_or_narrator_author_id ?? null;
   if (row.book_author_id != null) return row.book_author_id;
   if (AUTHOR_NAME_CATEGORIES.has(categoryName) && row.nominee_author_id != null) return row.nominee_author_id;
   return row.author_or_narrator_author_id ?? null;
@@ -66,6 +73,28 @@ export function computeAuthorCrowns(rows: WeeselRow[], categoriesById: Map<numbe
   const byAuthor = new Map<string, { count: number; authorId?: number }>();
   for (const r of rows) {
     if (r.result !== "winner") continue;
+    const categoryName = categoryNameOf(r, categoriesById);
+    const name = creditedAuthorName(r, categoryName);
+    if (!name) continue;
+    const authorId = creditedAuthorId(r, categoryName) ?? undefined;
+    const existing = byAuthor.get(name);
+    if (existing) existing.count++;
+    else byAuthor.set(name, { count: 1, authorId });
+  }
+  return Array.from(byAuthor.entries())
+    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Every nomination regardless of outcome (wins included) -- the "how many
+// times nominated" counterpart to computeAuthorCrowns' "how many times
+// won," same credited-entity resolution throughout.
+export function computeAuthorNominations(
+  rows: WeeselRow[],
+  categoriesById: Map<number, WeeselCategory>
+): CrownEntry[] {
+  const byAuthor = new Map<string, { count: number; authorId?: number }>();
+  for (const r of rows) {
     const categoryName = categoryNameOf(r, categoriesById);
     const name = creditedAuthorName(r, categoryName);
     if (!name) continue;

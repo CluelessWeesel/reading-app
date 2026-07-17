@@ -99,17 +99,51 @@ async function getRankByPages(authorId: number, totalPages: number): Promise<{ r
   return { rank: rank && rank > 0 ? rank : null, totalAuthors: rows.length };
 }
 
+// Ties in avg score (common with small sample sizes) are broken by avg
+// percentile across the author's ranked books -- e.g. Ken Liu vs. Alfred
+// Lansing tied on rating, but Ken Liu's books rank higher within their own
+// years' lists on average, so he wins the tie for 1st. Same percentile
+// convention as elsewhere (1 - (rank-1)/(total-1), 1 = best), averaged only
+// over books that actually have a rank -- a book with no rank yet doesn't
+// count against an author here, same reasoning as the stats leaderboard's
+// Consistency metric.
 async function getRankByScore(authorId: number, avgScore: number | null): Promise<{ rank: number | null; totalAuthors: number }> {
-  const { rows } = await pool.query<{ id: number; avg_score: number }>(
-    `select a.id::int as id, avg(b.score)::float8 as avg_score
-     from authors a
-     join books b on b.author_id = a.id and b.date_finished is not null
-     group by a.id
-     having avg(b.score) is not null`
+  const [scoreRows, percentileRows] = await Promise.all([
+    pool.query<{ id: number; avg_score: number }>(
+      `select a.id::int as id, avg(b.score)::float8 as avg_score
+       from authors a
+       join books b on b.author_id = a.id and b.date_finished is not null
+       group by a.id
+       having avg(b.score) is not null`
+    ),
+    pool.query<{ author_id: number; rank: number; total: number }>(
+      `select b.author_id::int as author_id, br.rank, cnt.total
+       from books b
+       join book_rankings br on br.book_id = b.book_id
+       join (select list_id, count(*)::int as total from book_rankings group by list_id) cnt
+         on cnt.list_id = br.list_id
+       where b.author_id is not null`
+    ),
+  ]);
+
+  const percentilesByAuthor = new Map<number, number[]>();
+  for (const r of percentileRows.rows) {
+    const percentile = r.total > 1 ? 1 - (r.rank - 1) / (r.total - 1) : 1;
+    const list = percentilesByAuthor.get(r.author_id) ?? [];
+    list.push(percentile);
+    percentilesByAuthor.set(r.author_id, list);
+  }
+  function avgPercentileFor(id: number): number {
+    const list = percentilesByAuthor.get(id);
+    if (!list || list.length === 0) return -1;
+    return list.reduce((sum, p) => sum + p, 0) / list.length;
+  }
+
+  const sorted = [...scoreRows.rows].sort(
+    (a, b) => b.avg_score - a.avg_score || avgPercentileFor(b.id) - avgPercentileFor(a.id)
   );
-  const sorted = [...rows].sort((a, b) => b.avg_score - a.avg_score);
   const rank = avgScore != null ? sorted.findIndex((r) => r.id === authorId) + 1 : null;
-  return { rank: rank && rank > 0 ? rank : null, totalAuthors: rows.length };
+  return { rank: rank && rank > 0 ? rank : null, totalAuthors: scoreRows.rows.length };
 }
 
 async function getGrandTotalPages(): Promise<number> {
