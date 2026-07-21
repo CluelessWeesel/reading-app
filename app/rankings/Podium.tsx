@@ -20,12 +20,12 @@ function PodiumColumn({
   const inner = (
     <>
       <CoverThumb title={row.title} coverUrl={row.cover_url} className={`aspect-[2/3] ${coverWidth} shadow-lg`} />
-      <p className="mt-2 max-w-full truncate text-center text-xs font-medium text-ink">{row.title}</p>
-      <p className="max-w-full truncate text-center text-[10px] text-ink-faint">{row.author ?? ""}</p>
+      <p className="mt-2 max-w-full truncate text-center text-xs font-medium text-ink-warm">{row.title}</p>
+      <p className="max-w-full truncate text-center text-[10px] text-ink-warm-faint">{row.author ?? ""}</p>
       <div
         className={`mt-2 flex ${pedestalHeight} w-full items-start justify-center rounded-t-lg bg-accent/15 pt-1`}
       >
-        <span className={`${fraunces.className} text-xl font-bold text-ink`}>{place}</span>
+        <span className={`${fraunces.className} text-xl font-bold text-ink-warm`}>{place}</span>
       </div>
     </>
   );
@@ -48,7 +48,7 @@ export function Podium({ ranked }: { ranked: RankedRow[] }) {
   if (!first) return null;
 
   return (
-    <div className="mb-6 flex items-end justify-center gap-3 rounded-xl border border-hairline bg-card/40 p-6 sm:gap-6">
+    <div className="mb-6 flex items-end justify-center gap-3 rounded-xl border border-gold bg-surface-1 p-6 sm:gap-6">
       {second && <PodiumColumn row={second} place={2} pedestalHeight="h-12" coverWidth="w-16 sm:w-20" />}
       <PodiumColumn row={first} place={1} pedestalHeight="h-20" coverWidth="w-20 sm:w-24" />
       {third && <PodiumColumn row={third} place={3} pedestalHeight="h-8" coverWidth="w-16 sm:w-20" />}

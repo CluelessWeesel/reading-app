@@ -7,7 +7,7 @@ import { fraunces } from "../shared/fonts";
 
 export function pillClass(active: boolean): string {
   return `rounded-full px-3 py-1 text-xs font-medium transition ${
-    active ? "bg-accent text-on-accent" : "border border-hairline text-ink-muted hover:bg-hover"
+    active ? "bg-accent text-on-accent" : "border border-gold text-ink-warm-muted hover:bg-hover"
   }`;
 }
 
@@ -29,15 +29,15 @@ export function CollapsibleCard({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className={`${fraunces.className} text-base font-semibold text-ink`}>{title}</h3>
+        <h3 className={`${fraunces.className} text-base font-semibold text-ink-warm`}>{title}</h3>
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}
           aria-label={collapsed ? "Expand" : "Collapse"}
           aria-expanded={!collapsed}
-          className="shrink-0 rounded-full px-2 py-0.5 text-xs text-ink-faint hover:bg-hover hover:text-ink"
+          className="shrink-0 rounded-full px-2 py-0.5 text-xs text-ink-warm-faint hover:bg-hover hover:text-ink-warm"
         >
           {collapsed ? "▸" : "▾"}
         </button>
@@ -46,7 +46,7 @@ export function CollapsibleCard({
       {!collapsed && (
         <>
           {toggle && <div className="mb-2 flex flex-wrap items-center gap-2">{toggle}</div>}
-          {excludedNote && <p className="mb-2 text-xs text-ink-faint">{excludedNote}</p>}
+          {excludedNote && <p className="mb-2 text-xs text-ink-warm-faint">{excludedNote}</p>}
           {children}
         </>
       )}
@@ -55,7 +55,7 @@ export function CollapsibleCard({
 }
 
 export function EmptyState({ message }: { message: string }) {
-  return <p className="py-8 text-center text-sm text-ink-faint">{message}</p>;
+  return <p className="py-8 text-center text-sm text-ink-warm-faint">{message}</p>;
 }
 
 // Read-only cover thumbnail for drill-down lists -- unlike the editable
@@ -67,7 +67,7 @@ export function CoverThumb({ title, coverUrl }: { title: string; coverUrl: strin
     <div
       className={`relative aspect-[2/3] w-8 shrink-0 overflow-hidden rounded ${
         coverUrl
-          ? "bg-paper"
+          ? "bg-surface-2"
           : `flex items-center justify-center bg-gradient-to-br shadow-sm ring-1 ring-black/10 dark:ring-white/10 ${coverGradient(title)}`
       }`}
     >

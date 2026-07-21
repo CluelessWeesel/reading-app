@@ -39,7 +39,7 @@ export function BookHeader({
 
       <div className="min-w-[220px] flex-1">
         <div className="flex flex-wrap items-baseline gap-2">
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink`}>{book.title}</h1>
+          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm`}>{book.title}</h1>
           {rankingInfo && (
             <span
               className="rounded-full px-2.5 py-0.5 text-sm font-medium"
@@ -49,7 +49,7 @@ export function BookHeader({
             </span>
           )}
         </div>
-        <p className="mt-1 text-ink-muted">
+        <p className="mt-1 text-ink-warm-muted">
           {book.author_id != null ? (
             <Link href={`/authors/${book.author_id}`} className="hover:underline">
               {book.author}
@@ -72,20 +72,20 @@ export function BookHeader({
           </div>
         )}
 
-        <EditTrigger className="mt-3 rounded-full border border-hairline px-3 py-1 text-xs text-ink-muted hover:text-ink">
+        <EditTrigger className="mt-3 rounded-full border border-gold px-3 py-1 text-xs text-ink-warm-muted hover:text-ink-warm">
           Edit
         </EditTrigger>
       </div>
 
       <div className="shrink-0 text-right">
         {book.score != null && (
-          <div className={`${fraunces.className} text-3xl font-semibold text-ink`}>{book.score.toFixed(1)}</div>
+          <div className={`${fraunces.className} text-3xl font-semibold text-ink-warm`}>{book.score.toFixed(1)}</div>
         )}
         <div className={book.score != null ? "mt-1" : ""}>
           <StarRating score={book.score} />
         </div>
         {(book.predicted_score != null || modelPrediction) && (
-          <div className="mt-2 space-y-0.5 text-xs text-ink-faint">
+          <div className="mt-2 space-y-0.5 text-xs text-ink-warm-faint">
             {book.predicted_score != null && (
               <p>
                 your predicted {book.predicted_score.toFixed(1)}

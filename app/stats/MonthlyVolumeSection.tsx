@@ -42,7 +42,7 @@ export function MonthlyVolumeSection({
 
   return (
     <SectionShell title="Monthly volume">
-      <div className="rounded-xl border border-hairline bg-card/40 p-4">
+      <div className="rounded-xl border border-gold bg-surface-1 p-4">
         <div className="mb-3 flex items-center gap-2">
           <button type="button" onClick={() => setMode("books")} aria-pressed={mode === "books"} className={pillClass(mode === "books")}>
             Books finished
@@ -53,11 +53,11 @@ export function MonthlyVolumeSection({
         </div>
 
         {excludedNoteFor(data.excluded, "no finish date") && (
-          <p className="mb-2 text-xs text-ink-faint">{excludedNoteFor(data.excluded, "no finish date")}</p>
+          <p className="mb-2 text-xs text-ink-warm-faint">{excludedNoteFor(data.excluded, "no finish date")}</p>
         )}
 
         {data.buckets.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ink-faint">Not enough books in scope yet.</p>
+          <p className="py-8 text-center text-sm text-ink-warm-faint">Not enough books in scope yet.</p>
         ) : (
           <MonthlyVolumeChart buckets={data.buckets} valueOf={valueOf} formatValue={formatValue} />
         )}

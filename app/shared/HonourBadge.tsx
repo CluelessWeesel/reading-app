@@ -20,8 +20,8 @@ export function HonourBadge({ items }: { items: HonourItem[] }) {
     .join("\n");
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-ink-faint">
-      {wins.length > 0 && <span className="font-medium text-ink">🏆 {wins.length}</span>}
+    <span className="inline-flex items-center gap-1.5 text-xs text-ink-warm-faint">
+      {wins.length > 0 && <span className="font-medium text-ink-warm">🏆 {wins.length}</span>}
       <span>🏵️ {items.length}</span>
       <InfoTooltip text={tooltipText} />
     </span>

@@ -21,14 +21,14 @@ export function RecordCard({
   allTime?: RecordResult | null;
 }) {
   return (
-    <div className="rounded-lg border border-hairline bg-card/70 px-3 py-2.5">
+    <div className="rounded-lg border border-gold bg-surface-1 px-3 py-2.5">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">{label}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">{label}</p>
         {description && <InfoTooltip text={description} />}
       </div>
       {current.ok ? (
         <>
-          <p className={`${fraunces.className} truncate text-sm font-semibold text-ink`}>
+          <p className={`${fraunces.className} truncate text-sm font-semibold text-ink-warm`}>
             {current.holderHref ? (
               <Link href={current.holderHref} className="hover:underline">
                 {current.holder}
@@ -37,17 +37,17 @@ export function RecordCard({
               current.holder
             )}
           </p>
-          <p className="truncate text-xs text-ink-faint">
+          <p className="truncate text-xs text-ink-warm-faint">
             {current.value}
             {current.when ? ` · ${formatDateShort(current.when)}` : ""}
           </p>
         </>
       ) : (
-        <p className="mt-1 text-xs text-ink-faint">Not enough data yet.</p>
+        <p className="mt-1 text-xs text-ink-warm-faint">Not enough data yet.</p>
       )}
 
       {allTime && allTime.ok && (
-        <p className="mt-1.5 truncate text-[10px] text-ink-faint/70">
+        <p className="mt-1.5 truncate text-[10px] text-ink-warm-faint/70">
           All-time: {allTime.holder} · {allTime.value}
         </p>
       )}

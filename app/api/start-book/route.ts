@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { resolveAuthorId } from "@/app/shared/resolveAuthorId";
 
 const FORMAT_TYPES = new Set(["audio", "physical", "ebook"]);
 
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
     let bookTitle: string;
     let bookAuthor: string | null;
     let bookGenre: string | null;
+    let bookSubgenre: string | null;
+    let bookCoverUrl: string | null;
     let bookWordCount: number | null;
+    let bookPageCount: number | null;
     let tbrIdNum: number | null = null;
 
     if (source === "tbr") {
@@ -55,7 +59,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid TBR id." }, { status: 400 });
       }
       const { rows } = await client.query(
-        `select title, author, genre, word_count from tbr where id = $1`,
+        `select title, author, genre, subgenre, cover_url, author_id, word_count, page_count
+         from tbr where id = $1`,
         [tbrIdNum]
       );
       if (rows.length === 0) {
@@ -65,19 +70,29 @@ export async function POST(request: NextRequest) {
       bookTitle = rows[0].title;
       bookAuthor = rows[0].author;
       bookGenre = rows[0].genre;
+      bookSubgenre = rows[0].subgenre;
+      bookCoverUrl = rows[0].cover_url;
       bookWordCount = word_count != null ? (word_count as number) : rows[0].word_count;
+      bookPageCount = page_count != null ? (page_count as number) : rows[0].page_count;
     } else {
       bookTitle = (title as string).trim();
       bookAuthor = typeof author === "string" ? author.trim() || null : null;
       bookGenre = null;
+      bookSubgenre = null;
+      bookCoverUrl = null;
       bookWordCount = word_count != null ? (word_count as number) : null;
+      bookPageCount = page_count != null ? (page_count as number) : null;
     }
 
+    // Resolved fresh from the author name every time (rather than trusting
+    // tbr.author_id, which can itself be unlinked) -- see resolveAuthorId.
+    const bookAuthorId = await resolveAuthorId(client, bookAuthor);
+
     const { rows: bookRows } = await client.query(
-      `insert into books (title, author, genre, format_type, word_count, page_count, status, date_started, reread)
-       values ($1, $2, $3, $4, $5, $6, 'reading', $7, false)
+      `insert into books (title, author, genre, subgenre, cover_url, author_id, format_type, word_count, page_count, status, date_started, reread)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reading', $10, false)
        returning book_id`,
-      [bookTitle, bookAuthor, bookGenre, format_type, bookWordCount, page_count ?? null, date_started]
+      [bookTitle, bookAuthor, bookGenre, bookSubgenre, bookCoverUrl, bookAuthorId, format_type, bookWordCount, bookPageCount, date_started]
     );
     const bookId = bookRows[0].book_id;
 

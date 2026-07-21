@@ -12,12 +12,12 @@ function ConfirmedCard({ data }: { data: CeremonyCategoryData }) {
   const running = status.state !== "confirmed-not-running";
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/20 p-4 opacity-80">
+    <div className="rounded-xl border border-gold bg-surface-1 p-4 opacity-80">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className={`${fraunces.className} text-base font-semibold text-ink`}>{category.name}</h3>
+        <h3 className={`${fraunces.className} text-base font-semibold text-ink-warm`}>{category.name}</h3>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-            running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-hairline text-ink-faint"
+            running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-hairline text-ink-warm-faint"
           }`}
         >
           Confirmed · {running ? "RUNS" : "DOES NOT RUN"}
@@ -26,13 +26,13 @@ function ConfirmedCard({ data }: { data: CeremonyCategoryData }) {
       {nominees.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {nominees.map((n) => (
-            <div key={n.weeselId} className="flex items-center gap-1.5 rounded-full border border-hairline bg-card/70 px-2 py-1 text-xs">
+            <div key={n.weeselId} className="flex items-center gap-1.5 rounded-full border border-gold bg-surface-1 px-2 py-1 text-xs">
               {n.bookId != null ? (
                 <CoverThumb title={n.label} coverUrl={n.coverUrl} className="aspect-[2/3] w-4" />
               ) : (
                 <AuthorPhoto name={n.label} photoUrl={n.photoUrl} className="aspect-square w-4" initialClassName="text-[7px]" />
               )}
-              <span className="text-ink">{n.label}</span>
+              <span className="text-ink-warm">{n.label}</span>
             </div>
           ))}
         </div>
@@ -57,15 +57,15 @@ export function PreflightBoard({
   const reviewedCount = categoryData.filter((c) => c.status.state !== "unreviewed").length;
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
-        <Link href="/weesels" className="text-sm text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink">
+        <Link href="/weesels" className="text-sm text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm">
           ← The Weesels
         </Link>
 
         <header className="mb-6 mt-3">
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>{year} Weesels — Pre-flight</h1>
-          <p className="mt-1 text-sm text-ink-faint">
+          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>{year} Weesels — Pre-flight</h1>
+          <p className="mt-1 text-sm text-ink-warm-faint">
             {reviewedCount} of {categoryData.length} categories reviewed
           </p>
         </header>

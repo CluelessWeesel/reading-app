@@ -72,21 +72,21 @@ export function ReviewModal({
       role="presentation"
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-hairline bg-paper p-6 shadow-lg"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gold bg-surface-3 p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="review-modal-title"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id="review-modal-title" className={`${fraunces.className} text-xl font-semibold text-ink`}>
+          <h2 id="review-modal-title" className={`${fraunces.className} text-xl font-semibold text-ink-warm`}>
             {book.review ? "Edit review" : "Add review"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full px-2 py-1 text-ink-faint hover:bg-hover hover:text-ink"
+            className="rounded-full px-2 py-1 text-ink-warm-faint hover:bg-hover hover:text-ink-warm"
           >
             ✕
           </button>
@@ -113,7 +113,7 @@ export function ReviewModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-hairline px-4 py-1.5 text-sm text-ink-muted hover:text-ink"
+              className="rounded-full border border-gold px-4 py-1.5 text-sm text-ink-warm-muted hover:text-ink-warm"
             >
               Cancel
             </button>

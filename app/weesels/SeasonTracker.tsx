@@ -46,10 +46,10 @@ export async function SeasonTracker({ year }: { year: number }) {
   const daysUntil = daysBetweenInclusive(today, `${year}-12-25`) - 1;
 
   return (
-    <section className="mt-8 rounded-xl border border-hairline bg-card/40 p-4">
+    <section className="mt-8 rounded-xl border border-gold bg-surface-1 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className={`${fraunces.className} text-lg font-semibold text-ink`}>{year} season tracker</h2>
-        <p className="text-xs text-ink-faint">
+        <h2 className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>{year} season tracker</h2>
+        <p className="text-xs text-ink-warm-faint">
           {daysUntil > 0
             ? `${daysUntil} day${daysUntil === 1 ? "" : "s"} until the ceremony window (Dec 25)`
             : "Ceremony window open"}
@@ -62,10 +62,10 @@ export async function SeasonTracker({ year }: { year: number }) {
           return (
             <li
               key={category.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-hairline bg-card/70 px-3 py-1.5 text-xs"
+              className="flex items-center justify-between gap-2 rounded-lg border border-gold bg-surface-1 px-3 py-1.5 text-xs"
             >
-              <span className="text-ink">{category.name}</span>
-              <span className="text-ink-faint">
+              <span className="text-ink-warm">{category.name}</span>
+              <span className="text-ink-warm-faint">
                 {describeCategory(category, status, yearBooks, authorsFirstReadThisYear)}
               </span>
             </li>
@@ -75,16 +75,16 @@ export async function SeasonTracker({ year }: { year: number }) {
 
       {shortlist.length > 0 && (
         <div className="mt-4">
-          <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-faint">Your watched shortlist</p>
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Your watched shortlist</p>
           <div className="flex flex-wrap gap-2">
             {shortlist.map((s) => (
               <div
                 key={s.bookId}
-                className="flex items-center gap-2 rounded-full border border-hairline bg-card/70 py-1 pl-1 pr-2.5 text-xs"
+                className="flex items-center gap-2 rounded-full border border-gold bg-surface-1 py-1 pl-1 pr-2.5 text-xs"
               >
                 <CoverThumb title={s.title} coverUrl={s.coverUrl} className="aspect-[2/3] w-5" />
-                <span className="text-ink">{s.title}</span>
-                <span className="text-ink-faint">· {s.categoryNames.join(", ")}</span>
+                <span className="text-ink-warm">{s.title}</span>
+                <span className="text-ink-warm-faint">· {s.categoryNames.join(", ")}</span>
               </div>
             ))}
           </div>
@@ -93,7 +93,7 @@ export async function SeasonTracker({ year }: { year: number }) {
 
       <Link
         href={`/weesels/ceremony/${year}`}
-        className="mt-4 inline-block text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+        className="mt-4 inline-block text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
       >
         Run the ceremony →
       </Link>

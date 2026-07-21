@@ -59,7 +59,7 @@ export function DailyLogSection({
 }) {
   if (scope.kind === "all") {
     return (
-      <p className="py-12 text-center text-sm text-ink-faint">
+      <p className="py-12 text-center text-sm text-ink-warm-faint">
         Pick a year above to see its daily log.
       </p>
     );
@@ -67,7 +67,7 @@ export function DailyLogSection({
 
   const rows = computeDailyLog(dailyRows, scope.year, today, currentYear);
   if (rows.length === 0) {
-    return <p className="py-12 text-center text-sm text-ink-faint">No reading logged for {scope.year} yet.</p>;
+    return <p className="py-12 text-center text-sm text-ink-warm-faint">No reading logged for {scope.year} yet.</p>;
   }
 
   const pagesRange = columnRange(rows, (r) => r.pagesToday);
@@ -77,12 +77,12 @@ export function DailyLogSection({
   const reversed = [...rows].reverse();
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
-      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink`}>Daily log -- {scope.year}</h3>
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
+      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink-warm`}>Daily log -- {scope.year}</h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-hairline text-xs font-medium uppercase tracking-wide text-ink-faint">
+            <tr className="border-b border-gold text-xs font-medium uppercase tracking-wide text-ink-warm-faint">
               <th className="px-3 py-2 text-left">Day</th>
               <th className="px-3 py-2 text-right">Total pages (year)</th>
               <th className="px-3 py-2 text-right">Pages that day</th>
@@ -91,10 +91,10 @@ export function DailyLogSection({
               <th className="px-3 py-2 text-right">Yearly average</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-hairline/60">
+          <tbody className="divide-y divide-gold/60">
             {reversed.map((r) => (
               <tr key={r.date}>
-                <td className="whitespace-nowrap px-3 py-1.5 text-sm text-ink">{formatDayLabel(r.date)}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-sm text-ink-warm">{formatDayLabel(r.date)}</td>
                 <Cell value={r.cumulative} />
                 <Cell value={r.pagesToday} colored={heat(r.pagesToday, pagesRange, 200)} />
                 <Cell value={Math.round(r.projected)} colored={heat(r.projected, projectedRange)} />

@@ -10,10 +10,10 @@ import type { ScopeData } from "./types";
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-hairline bg-card/70 px-3 py-2.5">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">{label}</p>
-      <p className={`${fraunces.className} text-lg font-semibold text-ink`}>{value}</p>
-      {sub && <p className="text-xs text-ink-faint">{sub}</p>}
+    <div className="rounded-lg border border-gold bg-surface-1 px-3 py-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">{label}</p>
+      <p className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>{value}</p>
+      {sub && <p className="text-xs text-ink-warm-faint">{sub}</p>}
     </div>
   );
 }
@@ -89,8 +89,8 @@ export function PaceSection({
 
   return (
     <SectionShell title="Pace">
-      <div className="rounded-xl border border-hairline bg-card/40 p-4">
-        <p className={`${fraunces.className} text-lg font-semibold text-ink`}>{headline()}</p>
+      <div className="rounded-xl border border-gold bg-surface-1 p-4">
+        <p className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>{headline()}</p>
 
         {isYear && (
           <div className="mt-1 text-xs">
@@ -100,7 +100,7 @@ export function PaceSection({
                   type="number"
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
-                  className="w-24 rounded border border-hairline bg-card px-1.5 py-0.5 text-xs text-ink outline-none focus:ring-2 focus:ring-accent/40"
+                  className="w-24 rounded border border-gold bg-surface-1 px-1.5 py-0.5 text-xs text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
                   autoFocus
                 />
                 <button
@@ -114,7 +114,7 @@ export function PaceSection({
                 <button
                   type="button"
                   onClick={() => setEditingGoal(false)}
-                  className="text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                  className="text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                 >
                   Cancel
                 </button>
@@ -126,7 +126,7 @@ export function PaceSection({
                   setGoalInput(String(data.goal ?? ""));
                   setEditingGoal(true);
                 }}
-                className="text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                className="text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
               >
                 {data.goal != null ? `Goal: ${data.goal.toLocaleString()} pages · Edit` : "Set a goal for this year"}
               </button>
@@ -141,14 +141,14 @@ export function PaceSection({
                 type="button"
                 onClick={() => setShowPriorYears((v) => !v)}
                 aria-pressed={showPriorYears}
-                className={`rounded-full border border-hairline px-3 py-1 text-xs transition ${
-                  showPriorYears ? "bg-hover text-ink" : "text-ink-faint hover:text-ink"
+                className={`rounded-full border border-gold px-3 py-1 text-xs transition ${
+                  showPriorYears ? "bg-hover text-ink-warm" : "text-ink-warm-faint hover:text-ink-warm"
                 }`}
               >
                 {showPriorYears ? "Hide" : "Compare to"} previous years
               </button>
               {overlayActive && (
-                <p className="text-xs text-ink-faint">{priorYearSeries.map((s) => s.year).join(", ")}</p>
+                <p className="text-xs text-ink-warm-faint">{priorYearSeries.map((s) => s.year).join(", ")}</p>
               )}
             </div>
           )}
@@ -182,7 +182,7 @@ export function PaceSection({
         </div>
 
         <div className="mt-4">
-          <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-faint">Format</h3>
+          <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Format</h3>
           {data.formatSplit.hasSplitData ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard
@@ -199,7 +199,7 @@ export function PaceSection({
           ) : (
             <div>
               <StatCard label="Daily average" value={`${data.pagesPerDay.toFixed(1)} pg/day`} />
-              <p className="mt-1.5 text-xs text-ink-faint">Per-format tracking begins mid-2026.</p>
+              <p className="mt-1.5 text-xs text-ink-warm-faint">Per-format tracking begins mid-2026.</p>
             </div>
           )}
         </div>

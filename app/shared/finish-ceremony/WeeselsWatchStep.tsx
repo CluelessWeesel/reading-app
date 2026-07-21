@@ -81,7 +81,7 @@ export function WeeselsWatchStep({
         onSkip={onFinish}
         onBack={onBack}
       >
-        <p className="text-sm text-ink-faint">Loading...</p>
+        <p className="text-sm text-ink-warm-faint">Loading...</p>
       </CeremonyStepShell>
     );
   }
@@ -98,7 +98,7 @@ export function WeeselsWatchStep({
       nextDisabled={saving}
     >
       <div className="space-y-3">
-        <p className="text-sm text-ink-faint">
+        <p className="text-sm text-ink-warm-faint">
           Flag this one as a shortlist pick for this year&apos;s Weesels — just a note to yourself, not a commitment.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -110,15 +110,15 @@ export function WeeselsWatchStep({
               aria-pressed={selected.has(c.id)}
               className={`rounded-full border px-3 py-1.5 text-sm transition ${
                 selected.has(c.id)
-                  ? "border-accent bg-accent/10 text-ink"
-                  : "border-hairline text-ink-muted hover:bg-hover"
+                  ? "border-accent bg-accent/10 text-ink-warm"
+                  : "border-gold text-ink-warm-muted hover:bg-hover"
               }`}
             >
               {selected.has(c.id) ? "⭐ " : ""}
               {c.name}
             </button>
           ))}
-          {offered.length === 0 && <p className="text-sm text-ink-faint">No categories available.</p>}
+          {offered.length === 0 && <p className="text-sm text-ink-warm-faint">No categories available.</p>}
         </div>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       </div>

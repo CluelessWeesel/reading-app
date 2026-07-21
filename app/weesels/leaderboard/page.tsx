@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { getNarratorPhotoMap } from "../../shared/narratorPhotos";
 import { getCategories, getWeeselRows } from "../data";
 import { AuthorWinsBoard } from "./AuthorWinsBoard";
 
@@ -14,6 +15,11 @@ async function getAuthorPhotos(): Promise<Record<number, string | null>> {
 }
 
 export default async function WeeselsLeaderboardPage() {
-  const [rows, categories, photos] = await Promise.all([getWeeselRows(), getCategories(), getAuthorPhotos()]);
-  return <AuthorWinsBoard rows={rows} categories={categories} photos={photos} />;
+  const [rows, categories, photos, narratorPhotos] = await Promise.all([
+    getWeeselRows(),
+    getCategories(),
+    getAuthorPhotos(),
+    getNarratorPhotoMap(),
+  ]);
+  return <AuthorWinsBoard rows={rows} categories={categories} photos={photos} narratorPhotos={narratorPhotos} />;
 }

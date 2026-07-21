@@ -210,9 +210,11 @@ function sortValueLabel(book: Book, key: string): string | null {
 export function LibraryView({
   books: initialBooks,
   allGenres,
+  allSubgenres,
 }: {
   books: Book[];
   allGenres: string[];
+  allSubgenres: string[];
 }) {
   const searchParams = useSearchParams();
   const [books, setBooks] = useState(initialBooks);
@@ -339,14 +341,14 @@ export function LibraryView({
   }, []);
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-6xl">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>
+            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>
               Library
             </h1>
-            <p className="mt-1 text-sm text-ink-faint">
+            <p className="mt-1 text-sm text-ink-warm-faint">
               Showing {filtered.length} of {books.length} books
             </p>
           </div>
@@ -360,13 +362,13 @@ export function LibraryView({
               Start a book
             </button>
 
-            <div className="flex gap-1 rounded-full border border-hairline bg-card/70 p-1 shadow-sm">
+            <div className="surface-flat flex gap-1 rounded-full p-1">
               <button
                 type="button"
                 onClick={() => setView("card")}
                 aria-pressed={view === "card"}
                 className={`rounded-full px-3 py-1 text-sm transition ${
-                  view === "card" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                  view === "card" ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
                 }`}
               >
                 Card
@@ -376,7 +378,7 @@ export function LibraryView({
                 onClick={() => setView("grid")}
                 aria-pressed={view === "grid"}
                 className={`rounded-full px-3 py-1 text-sm transition ${
-                  view === "grid" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                  view === "grid" ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
                 }`}
               >
                 Grid
@@ -387,7 +389,7 @@ export function LibraryView({
 
         <CurrentlyReadingPanel />
 
-        <div className="sticky top-0 z-10 -mx-4 mb-8 border-b border-hairline bg-paper/90 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+        <div className="surface-flat sticky top-0 z-10 -mx-4 mb-8 rounded-none px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1">
               <label className={labelClass()} htmlFor="filter-genre">
@@ -492,8 +494,8 @@ export function LibraryView({
                 aria-pressed={indieOnly}
                 className={`rounded-full border px-3 py-1.5 text-sm transition ${
                   indieOnly
-                    ? "border-accent bg-accent/10 text-ink"
-                    : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                    ? "border-accent bg-accent/10 text-ink-warm"
+                    : "border-gold bg-surface-1 text-ink-warm-muted hover:bg-surface-2"
                 }`}
               >
                 Indie only
@@ -521,7 +523,7 @@ export function LibraryView({
                   <button
                     type="button"
                     onClick={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
-                    className="rounded-full border border-hairline bg-card/70 px-3 py-1.5 text-sm text-ink shadow-sm transition hover:text-ink"
+                    className="rounded-full border border-gold bg-surface-1 px-3 py-1.5 text-sm text-ink-warm shadow-sm transition hover:bg-surface-2"
                     title="Toggle sort direction"
                   >
                     {sortDirection === "asc" ? sortField.ascLabel : sortField.descLabel}{" "}
@@ -535,7 +537,7 @@ export function LibraryView({
               <button
                 type="button"
                 onClick={clearFilters}
-                className="ml-auto text-sm text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                className="ml-auto text-sm text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
               >
                 Clear filters
               </button>
@@ -544,7 +546,7 @@ export function LibraryView({
         </div>
 
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-sm text-ink-faint">
+          <p className="py-16 text-center text-sm text-ink-warm-faint">
             No books match these filters.
           </p>
         ) : view === "card" ? (
@@ -569,6 +571,7 @@ export function LibraryView({
           book={editingBook}
           allGenres={allGenres}
           seriesOptions={seriesList}
+          subgenreOptions={allSubgenres}
           onClose={() => setEditingBookId(null)}
           onSaved={handleBookSaved}
           onDeleted={handleBookDeleted}

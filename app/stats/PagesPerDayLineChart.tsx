@@ -48,7 +48,7 @@ export function PagesPerDayLineChart({
   }
 
   if (points.length === 0) {
-    return <p className="py-8 text-center text-sm text-ink-faint">Not enough books in scope yet.</p>;
+    return <p className="py-8 text-center text-sm text-ink-warm-faint">Not enough books in scope yet.</p>;
   }
 
   return (
@@ -106,8 +106,8 @@ export function PagesPerDayLineChart({
             <CoverThumb title={hover.point.title} coverUrl={hover.point.coverUrl} />
             <div className="min-w-0">
               <p className="truncate font-semibold">{hover.point.title}</p>
-              {hover.point.author && <p className="truncate text-ink-faint">{hover.point.author}</p>}
-              <p className="text-ink-faint">{hover.point.value.toFixed(1)} pg/day</p>
+              {hover.point.author && <p className="truncate text-ink-warm-faint">{hover.point.author}</p>}
+              <p className="text-ink-warm-faint">{hover.point.value.toFixed(1)} pg/day</p>
             </div>
           </div>
         </ChartTooltip>

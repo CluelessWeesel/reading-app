@@ -3,6 +3,7 @@ import { pool } from "@/lib/db";
 import { logForwardProgress } from "@/lib/logPosition";
 
 const FORMAT_TYPES = new Set(["audio", "physical", "ebook"]);
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
@@ -23,7 +24,7 @@ export async function PATCH(
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const { position, format_type, date } = body as Record<string, unknown>;
+  const { position, format_type, date, dominant_color } = body as Record<string, unknown>;
 
   if (position !== undefined && (!isFiniteNumber(position) || position < 0)) {
     return NextResponse.json({ error: "Position must be a non-negative number." }, { status: 400 });
@@ -36,8 +37,11 @@ export async function PATCH(
   if (position !== undefined && (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
     return NextResponse.json({ error: "Expected a date in YYYY-MM-DD format." }, { status: 400 });
   }
+  if (dominant_color !== undefined && (typeof dominant_color !== "string" || !HEX_COLOR.test(dominant_color))) {
+    return NextResponse.json({ error: "dominant_color must be a #rrggbb hex string." }, { status: 400 });
+  }
 
-  if (position === undefined && format_type === undefined) {
+  if (position === undefined && format_type === undefined && dominant_color === undefined) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
 
@@ -94,10 +98,13 @@ export async function PATCH(
   if (format_type !== undefined) {
     await pool.query(`update books set format_type = $1 where book_id = $2`, [format_type, bookIdNum]);
   }
+  if (dominant_color !== undefined) {
+    await pool.query(`update current_books set dominant_color = $1 where book_id = $2`, [dominant_color, bookIdNum]);
+  }
 
   const { rows } = await pool.query(
     `select
-       cb.book_id, cb.position::float8 as position,
+       cb.book_id, cb.position::float8 as position, cb.dominant_color,
        b.title, b.author, b.format_type, b.page_count,
        b.word_count::float8 as word_count, b.cover_url,
        to_char(b.date_started, 'YYYY-MM-DD') as date_started

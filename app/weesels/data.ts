@@ -71,11 +71,13 @@ export async function getWeeselRows(): Promise<WeeselRow[]> {
             w.result, w.citation,
             b.title as book_title, b.cover_url, b.author as book_author, b.author_id::int as book_author_id,
             b.genre as book_genre, b.format_type as book_format_type,
-            a2.id::int as nominee_author_id, a3.id::int as author_or_narrator_author_id
+            a2.id::int as nominee_author_id, a3.id::int as author_or_narrator_author_id,
+            n.id::int as author_or_narrator_narrator_id
      from weesels w
      left join books b on b.book_id = w.book_id
      left join authors a2 on a2.name = w.nominee
      left join authors a3 on a3.name = w.author_or_narrator
+     left join narrators n on n.name = w.author_or_narrator
      order by w.year asc, w.id asc`
   );
   return rows;

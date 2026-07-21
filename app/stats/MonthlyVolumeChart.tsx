@@ -44,7 +44,7 @@ export function MonthlyVolumeChart({
                 onMouseEnter={(e) => handleEnter(e, b)}
                 onMouseLeave={() => setHover((h) => (h?.bucket === b ? null : h))}
               />
-              <span className="w-full truncate text-center text-[9px] text-ink-faint">{b.label}</span>
+              <span className="w-full truncate text-center text-[9px] text-ink-warm-faint">{b.label}</span>
             </div>
           );
         })}
@@ -53,9 +53,9 @@ export function MonthlyVolumeChart({
       {hover && (
         <ChartTooltip x={hover.x} y={hover.y}>
           <p className="font-semibold">{hover.bucket.label}</p>
-          <p className="text-ink-faint">{formatValue(valueOf(hover.bucket))}</p>
+          <p className="text-ink-warm-faint">{formatValue(valueOf(hover.bucket))}</p>
           {hover.bucket.books.length > 0 && (
-            <ul className="mt-1 space-y-0.5 text-ink-faint">
+            <ul className="mt-1 space-y-0.5 text-ink-warm-faint">
               {hover.bucket.books.slice(0, 3).map((bk) => (
                 <li key={bk.book_id} className="truncate">
                   {bk.title}

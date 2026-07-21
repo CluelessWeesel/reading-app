@@ -16,23 +16,23 @@ function candidateRowKey(c: EligibleCandidate): string {
 
 function CandidateRow({ candidate, onRemove }: { candidate: EligibleCandidate; onRemove: () => void }) {
   return (
-    <li className="flex items-center gap-2 rounded-lg border border-hairline bg-card/70 px-2 py-1.5 text-sm">
+    <li className="flex items-center gap-2 rounded-lg border border-gold bg-surface-1 px-2 py-1.5 text-sm">
       {candidate.bookId != null ? (
         <CoverThumb title={candidate.label} coverUrl={candidate.coverUrl} className="aspect-[2/3] w-6" />
       ) : candidate.authorId != null || candidate.photoUrl != null ? (
         <AuthorPhoto name={candidate.label} photoUrl={candidate.photoUrl} className="aspect-square w-6" initialClassName="text-[8px]" />
       ) : null}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-ink">
+        <p className="truncate text-ink-warm">
           {candidate.preStarred && <span title="Flagged in the finish ceremony">⭐ </span>}
           {candidate.label}
         </p>
-        {candidate.sublabel && <p className="truncate text-xs text-ink-faint">{candidate.sublabel}</p>}
+        {candidate.sublabel && <p className="truncate text-xs text-ink-warm-faint">{candidate.sublabel}</p>}
       </div>
       <button
         type="button"
         onClick={onRemove}
-        className="shrink-0 rounded-full px-2 text-xs text-ink-faint hover:text-red-600 dark:hover:text-red-400"
+        className="shrink-0 rounded-full px-2 text-xs text-ink-warm-faint hover:text-red-600 dark:hover:text-red-400"
         aria-label={`Remove ${candidate.label}`}
       >
         ✕
@@ -61,8 +61,8 @@ function ShortlistRow({
         selected
           ? "border-accent bg-accent/10"
           : disabled
-            ? "border-hairline bg-card/30 opacity-40"
-            : "border-hairline bg-card/70 hover:bg-hover"
+            ? "border-gold bg-surface-1 opacity-40"
+            : "border-gold bg-surface-1 hover:bg-hover"
       }`}
     >
       {candidate.bookId != null ? (
@@ -71,10 +71,10 @@ function ShortlistRow({
         <AuthorPhoto name={candidate.label} photoUrl={candidate.photoUrl} className="aspect-square w-6" initialClassName="text-[8px]" />
       ) : null}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-ink">{candidate.label}</p>
-        {candidate.sublabel && <p className="truncate text-xs text-ink-faint">{candidate.sublabel}</p>}
+        <p className="truncate text-ink-warm">{candidate.label}</p>
+        {candidate.sublabel && <p className="truncate text-xs text-ink-warm-faint">{candidate.sublabel}</p>}
       </div>
-      <span className={`shrink-0 text-xs ${selected ? "text-accent" : "text-ink-faint"}`}>{selected ? "✓ kept" : "tap to keep"}</span>
+      <span className={`shrink-0 text-xs ${selected ? "text-accent" : "text-ink-warm-faint"}`}>{selected ? "✓ kept" : "tap to keep"}</span>
     </button>
   );
 }
@@ -225,13 +225,13 @@ export function PreflightCard({
   if (phase === "shortlisting") {
     const selectedCandidates = pool.filter((c) => selectedKeys.has(c.key));
     return (
-      <div className="rounded-xl border border-hairline bg-card/40 p-4">
+      <div className="rounded-xl border border-gold bg-surface-1 p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
-            <h3 className={`${fraunces.className} text-base font-semibold text-ink`}>{category.name}</h3>
-            <p className="text-xs text-ink-faint">Cut down to {MAX_NOMINEES} for the ballot</p>
+            <h3 className={`${fraunces.className} text-base font-semibold text-ink-warm`}>{category.name}</h3>
+            <p className="text-xs text-ink-warm-faint">Cut down to {MAX_NOMINEES} for the ballot</p>
           </div>
-          <span className="shrink-0 rounded-full bg-hairline px-2.5 py-1 text-xs font-medium text-ink-faint">
+          <span className="shrink-0 rounded-full bg-hairline px-2.5 py-1 text-xs font-medium text-ink-warm-faint">
             {selectedKeys.size}/{MAX_NOMINEES} selected
           </span>
         </div>
@@ -255,7 +255,7 @@ export function PreflightCard({
           <button
             type="button"
             onClick={() => setPhase("building")}
-            className="text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+            className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
           >
             ← Back to pool
           </button>
@@ -273,17 +273,17 @@ export function PreflightCard({
   }
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <h3 className={`${fraunces.className} text-base font-semibold text-ink`}>{category.name}</h3>
-          <p className="text-xs text-ink-faint">
+          <h3 className={`${fraunces.className} text-base font-semibold text-ink-warm`}>{category.name}</h3>
+          <p className="text-xs text-ink-warm-faint">
             {pool.length} candidate{pool.length === 1 ? "" : "s"} · needs {category.min_candidates}+
           </p>
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-            verdict === "runs" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-hairline text-ink-faint"
+            verdict === "runs" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-hairline text-ink-warm-faint"
           }`}
         >
           {verdict === "runs" ? "RUNS" : "DOES NOT RUN"}
@@ -300,7 +300,7 @@ export function PreflightCard({
 
       {remainingSuggestions.length > 0 && (
         <div className="mb-3 rounded-lg border border-dashed border-accent/40 bg-accent/5 p-2">
-          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">
             ⭐ From your watchlist
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -309,7 +309,7 @@ export function PreflightCard({
                 key={w.bookId}
                 type="button"
                 onClick={() => addSuggestion(w)}
-                className="rounded-full border border-hairline bg-card/70 px-2.5 py-1 text-xs text-ink hover:bg-hover"
+                className="rounded-full border border-gold bg-surface-1 px-2.5 py-1 text-xs text-ink-warm hover:bg-hover"
               >
                 + {w.title}
               </button>
@@ -326,7 +326,7 @@ export function PreflightCard({
             onChange={(e) => setManualLabel(e.target.value)}
             placeholder={category.name === "Best Series" ? "Series name" : "Author name"}
             list={`preflight-authors-${category.id}`}
-            className="min-w-0 flex-1 rounded-lg border border-hairline bg-card/70 px-2.5 py-1.5 text-sm text-ink"
+            className="min-w-0 flex-1 rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
           />
           {category.name === "Best Series" && (
             <input
@@ -335,7 +335,7 @@ export function PreflightCard({
               onChange={(e) => setManualSublabel(e.target.value)}
               placeholder="Author"
               list={`preflight-authors-${category.id}`}
-              className="min-w-0 flex-1 rounded-lg border border-hairline bg-card/70 px-2.5 py-1.5 text-sm text-ink"
+              className="min-w-0 flex-1 rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
             />
           )}
           <datalist id={`preflight-authors-${category.id}`}>
@@ -346,7 +346,7 @@ export function PreflightCard({
           <button
             type="button"
             onClick={addManual}
-            className="rounded-full border border-hairline px-3 py-1.5 text-xs text-ink-muted hover:bg-hover"
+            className="rounded-full border border-gold px-3 py-1.5 text-xs text-ink-warm-muted hover:bg-hover"
           >
             Add
           </button>
@@ -359,7 +359,7 @@ export function PreflightCard({
             onChange={(e) => setAddText(e.target.value)}
             placeholder={isAuthorIdentity ? "Add an author..." : "Add a book..."}
             list={datalistId}
-            className="min-w-0 flex-1 rounded-lg border border-hairline bg-card/70 px-2.5 py-1.5 text-sm text-ink"
+            className="min-w-0 flex-1 rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
           />
           <datalist id={datalistId}>
             {availableOptions.map((o) => (
@@ -369,7 +369,7 @@ export function PreflightCard({
           <button
             type="button"
             onClick={addFromSearch}
-            className="rounded-full border border-hairline px-3 py-1.5 text-xs text-ink-muted hover:bg-hover"
+            className="rounded-full border border-gold px-3 py-1.5 text-xs text-ink-warm-muted hover:bg-hover"
           >
             Add
           </button>

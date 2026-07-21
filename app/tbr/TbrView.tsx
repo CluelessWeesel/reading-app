@@ -27,7 +27,7 @@ function LastAddedLabel({ iso }: { iso: string }) {
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
   return (
-    <p className="text-sm text-ink-faint" title={formatExactUtc(iso)}>
+    <p className="text-sm text-ink-warm-faint" title={formatExactUtc(iso)}>
       Last added {formatRelativeTime(iso)}
     </p>
   );
@@ -133,9 +133,11 @@ function formatLabel(raw: string): string {
 export function TbrView({
   entries: initialEntries,
   allGenres,
+  allSubgenres,
 }: {
   entries: TbrEntry[];
   allGenres: string[];
+  allSubgenres: string[];
 }) {
   const [entries, setEntries] = useState(initialEntries);
   const [search, setSearch] = useState("");
@@ -272,18 +274,18 @@ export function TbrView({
   }
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-4xl">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>
+            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>
               To Be Read
             </h1>
-            <p className="mt-1 text-sm text-ink-faint">
+            <p className="mt-1 text-sm text-ink-warm-faint">
               {entries.length} book{entries.length === 1 ? "" : "s"} ·{" "}
               {formatCompactNumber(totalWords)} words
             </p>
-            <p className="text-xs text-ink-faint">
+            <p className="text-xs text-ink-warm-faint">
               {formatCompactNumber(totalWordsOwned)} owned · {formatCompactNumber(totalWordsUnowned)} unowned
               {unsortedCount > 0 && ` · ${formatCompactNumber(totalWordsUnsorted)} unsorted`}
             </p>
@@ -301,18 +303,18 @@ export function TbrView({
             <button
               type="button"
               onClick={() => setModalTarget("new")}
-              className="rounded-full border border-hairline bg-card/70 px-4 py-1.5 text-sm text-ink shadow-sm transition hover:bg-hover"
+              className="rounded-full border border-gold bg-surface-1 px-4 py-1.5 text-sm text-ink-warm shadow-sm transition hover:bg-hover"
             >
               + Add entry
             </button>
 
-            <div className="flex gap-1 rounded-full border border-hairline bg-card/70 p-1 shadow-sm">
+            <div className="flex gap-1 rounded-full border border-gold bg-surface-1 p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setLayout("list")}
                 aria-pressed={layout === "list"}
                 className={`rounded-full px-3 py-1 text-sm transition ${
-                  layout === "list" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                  layout === "list" ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
                 }`}
               >
                 List
@@ -322,7 +324,7 @@ export function TbrView({
                 onClick={() => setLayout("card")}
                 aria-pressed={layout === "card"}
                 className={`rounded-full px-3 py-1 text-sm transition ${
-                  layout === "card" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                  layout === "card" ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
                 }`}
               >
                 Cards
@@ -341,7 +343,7 @@ export function TbrView({
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition ${
               shelf === "owned"
                 ? "border-accent bg-accent text-on-accent shadow-sm"
-                : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                : "border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
             }`}
           >
             <BookIcon className="h-5 w-5" />
@@ -354,7 +356,7 @@ export function TbrView({
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition ${
               shelf === "unowned"
                 ? "border-accent bg-accent text-on-accent shadow-sm"
-                : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                : "border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
             }`}
           >
             <CartIcon className="h-5 w-5" />
@@ -367,14 +369,14 @@ export function TbrView({
             type="button"
             onClick={() => setShelf("unsorted")}
             className={`mb-6 block text-xs underline decoration-dotted underline-offset-4 ${
-              shelf === "unsorted" ? "text-ink" : "text-ink-faint hover:text-ink"
+              shelf === "unsorted" ? "text-ink-warm" : "text-ink-warm-faint hover:text-ink-warm"
             }`}
           >
             {unsortedCount} unsorted
           </button>
         )}
 
-        <div className="sticky top-0 z-10 -mx-4 mb-8 border-b border-hairline bg-paper/90 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+        <div className="surface-flat sticky top-0 z-10 -mx-4 mb-8 rounded-none px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1">
               <label className={labelClass()} htmlFor="tbr-search">
@@ -488,7 +490,7 @@ export function TbrView({
               <button
                 type="button"
                 onClick={clearFilters}
-                className="ml-auto text-sm text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                className="ml-auto text-sm text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
               >
                 Clear filters
               </button>
@@ -497,28 +499,28 @@ export function TbrView({
         </div>
 
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-sm text-ink-faint">
+          <p className="py-16 text-center text-sm text-ink-warm-faint">
             No TBR entries match these filters.
           </p>
         ) : layout === "list" ? (
-          <ul className="divide-y divide-hairline">
+          <ul className="surface-flat divide-y divide-gold rounded-xl">
             {filtered.map((entry) => (
-              <li key={entry.id} className="flex items-center gap-4 py-3">
+              <li key={entry.id} className="flex items-center gap-4 px-4 py-3">
                 <Cover
                   id={entry.id}
                   title={entry.title}
                   coverUrl={entry.cover_url}
                   onCoverChange={handleCoverChange}
                   apiPath={`/api/tbr/${entry.id}/cover`}
-                  className="aspect-[2/3] w-8"
+                  className="aspect-[2/3] w-11"
                   initialClassName="text-xs"
                 />
                 <div className="min-w-0 flex-1">
-                  <h2 className={`${fraunces.className} truncate text-base font-semibold text-ink`}>
+                  <h2 className={`${fraunces.className} truncate text-base font-semibold text-ink-warm`}>
                     {entry.title}
                   </h2>
-                  <p className="truncate text-xs text-ink-muted">{entry.author ?? "Unknown author"}</p>
-                  <p className="truncate text-xs text-ink-faint">
+                  <p className="truncate text-xs text-ink-warm-muted">{entry.author ?? "Unknown author"}</p>
+                  <p className="truncate text-xs text-ink-warm-faint">
                     {entry.genre ?? "No genre"}
                     {entry.subgenre ? ` · ${entry.subgenre}` : ""}
                     {entry.owned_or_format ? ` · ${entry.owned_or_format}` : ""}
@@ -527,26 +529,26 @@ export function TbrView({
                 {entry.owned != null && (
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                      entry.owned ? "bg-accent/10 text-accent" : "text-ink-faint"
+                      entry.owned ? "bg-accent/10 text-accent" : "text-ink-warm-faint"
                     }`}
                   >
                     {entry.owned ? "Owned" : "Unowned"}
                   </span>
                 )}
-                <div className="shrink-0 text-right text-xs text-ink-faint">
+                <div className="shrink-0 text-right text-xs text-ink-warm-faint">
                   {entry.word_count != null ? `${entry.word_count.toLocaleString()} words` : "--"}
                 </div>
                 <button
                   type="button"
                   onClick={() => setStartBookTarget(entry)}
-                  className="shrink-0 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                  className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                 >
                   Start
                 </button>
                 <button
                   type="button"
                   onClick={() => setModalTarget(entry)}
-                  className="shrink-0 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                  className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                 >
                   Edit
                 </button>
@@ -561,7 +563,7 @@ export function TbrView({
               // can't contain a nested <button> without a hydration error.
               <div
                 key={entry.id}
-                className="group flex flex-col gap-2 rounded-xl p-2 transition hover:-translate-y-0.5 hover:bg-hover"
+                className="surface-card group flex flex-col gap-2 rounded-xl p-2"
               >
                 <Cover
                   id={entry.id}
@@ -576,11 +578,11 @@ export function TbrView({
                     regardless of title/author length -- same fix as the
                     library card grid's title-wrap alignment issue. */}
                 <div className="flex h-20 flex-col gap-0.5 px-0.5">
-                  <h2 className={`${fraunces.className} line-clamp-2 text-sm font-semibold leading-snug text-ink`}>
+                  <h2 className={`${fraunces.className} line-clamp-2 text-sm font-semibold leading-snug text-ink-warm`}>
                     {entry.title}
                   </h2>
-                  <p className="truncate text-xs text-ink-muted">{entry.author ?? "Unknown author"}</p>
-                  <p className="truncate text-xs text-ink-faint">
+                  <p className="truncate text-xs text-ink-warm-muted">{entry.author ?? "Unknown author"}</p>
+                  <p className="truncate text-xs text-ink-warm-faint">
                     {entry.word_count != null ? `${entry.word_count.toLocaleString()} words` : "--"}
                   </p>
                 </div>
@@ -588,7 +590,7 @@ export function TbrView({
                 <button
                   type="button"
                   onClick={() => setModalTarget(entry)}
-                  className="self-start px-0.5 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                  className="self-start px-0.5 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                 >
                   Edit
                 </button>
@@ -602,6 +604,7 @@ export function TbrView({
         <TbrEntryModal
           entry={modalTarget === "new" ? null : modalTarget}
           allGenres={allGenres}
+          subgenreOptions={allSubgenres}
           ownedFormatOptions={ownedFormatOptions}
           onClose={() => setModalTarget(null)}
           onSaved={handleSaved}

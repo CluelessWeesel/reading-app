@@ -4,8 +4,8 @@ import type { Minis } from "./derivedStats";
 
 function MiniCard({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-hairline bg-card/70 px-3 py-2.5">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">{label}</p>
+    <div className="rounded-lg border border-gold bg-surface-1 px-3 py-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">{label}</p>
       {children}
     </div>
   );
@@ -13,7 +13,7 @@ function MiniCard({ label, children }: { label: string; children: ReactNode }) {
 
 function BookLink({ bookId, title }: { bookId: number; title: string }) {
   return (
-    <Link href={`/books/${bookId}`} className="block truncate text-sm text-ink hover:underline">
+    <Link href={`/books/${bookId}`} className="block truncate text-sm text-ink-warm hover:underline">
       {title}
     </Link>
   );
@@ -28,7 +28,7 @@ export function MinisRow({ minis }: { minis: Minis }) {
     cards.push(
       <MiniCard key="longest" label="Their longest, that I've read">
         <BookLink bookId={minis.longestBook.book_id} title={minis.longestBook.title} />
-        <p className="text-xs text-ink-faint">{Math.round(minis.longestBook.word_count as number).toLocaleString()} words</p>
+        <p className="text-xs text-ink-warm-faint">{Math.round(minis.longestBook.word_count as number).toLocaleString()} words</p>
       </MiniCard>
     );
   }
@@ -37,7 +37,7 @@ export function MinisRow({ minis }: { minis: Minis }) {
     cards.push(
       <MiniCard key="fastest" label="My fastest read of theirs">
         <BookLink bookId={minis.fastestRead.book_id} title={minis.fastestRead.title} />
-        <p className="text-xs text-ink-faint">{(minis.fastestRead.avg_pages_per_day as number).toFixed(1)} pg/day</p>
+        <p className="text-xs text-ink-warm-faint">{(minis.fastestRead.avg_pages_per_day as number).toFixed(1)} pg/day</p>
       </MiniCard>
     );
   }
@@ -46,7 +46,7 @@ export function MinisRow({ minis }: { minis: Minis }) {
     cards.push(
       <MiniCard key="peak" label="Their peak-ranked book, ever">
         <BookLink bookId={minis.peakRanked.book.book_id} title={minis.peakRanked.book.title} />
-        <p className="text-xs text-ink-faint">
+        <p className="text-xs text-ink-warm-faint">
           #{minis.peakRanked.info.rank} of {minis.peakRanked.info.total} · {minis.peakRanked.info.year}
         </p>
       </MiniCard>
@@ -56,7 +56,7 @@ export function MinisRow({ minis }: { minis: Minis }) {
   if (minis.totalDaysInWords != null) {
     cards.push(
       <MiniCard key="days-in-words" label="Days of your life in their words">
-        <p className="text-sm text-ink">{minis.totalDaysInWords} days</p>
+        <p className="text-sm text-ink-warm">{minis.totalDaysInWords} days</p>
       </MiniCard>
     );
   }
@@ -64,7 +64,7 @@ export function MinisRow({ minis }: { minis: Minis }) {
   if (minis.daysSinceLast) {
     cards.push(
       <MiniCard key="days-since" label="Time since your last read">
-        <p className="text-sm text-ink">
+        <p className="text-sm text-ink-warm">
           {minis.daysSinceLast.days} day{minis.daysSinceLast.days === 1 ? "" : "s"} since your last {minis.daysSinceLast.surname}
         </p>
       </MiniCard>

@@ -104,7 +104,7 @@ export function DistributionCard({
           </div>
           <div className="mt-1 flex gap-1">
             {buckets.map((b) => (
-              <span key={b.key} className="flex-1 truncate text-center text-[9px] text-ink-faint">
+              <span key={b.key} className="flex-1 truncate text-center text-[9px] text-ink-warm-faint">
                 {b.label}
               </span>
             ))}
@@ -125,25 +125,25 @@ export function DistributionCard({
                 aria-pressed={active}
                 className="flex w-full items-center gap-2 text-left text-xs"
               >
-                <span className="w-28 shrink-0 truncate text-ink-faint">{b.label}</span>
+                <span className="w-28 shrink-0 truncate text-ink-warm-faint">{b.label}</span>
                 <span className="h-4 flex-1 overflow-hidden rounded bg-hairline">
                   <span
                     className={`block h-full rounded transition ${active ? "bg-accent" : "bg-accent/55"}`}
                     style={{ width: `${Math.max((v / maxValue) * 100, v > 0 ? 2 : 0)}%` }}
                   />
                 </span>
-                <span className="w-20 shrink-0 text-right text-ink">{formatValue(v, b)}</span>
+                <span className="w-20 shrink-0 text-right text-ink-warm">{formatValue(v, b)}</span>
               </button>
             );
           })}
         </div>
       )}
 
-      {caption && <p className="mt-1.5 text-xs text-ink-faint">{caption}</p>}
+      {caption && <p className="mt-1.5 text-xs text-ink-warm-faint">{caption}</p>}
 
       {hovered && !selected && (
-        <p className="mt-2 truncate text-xs text-ink-faint">
-          <span className="text-ink">{hovered.label}</span>: {formatValue(valueOf(hovered), hovered)}
+        <p className="mt-2 truncate text-xs text-ink-warm-faint">
+          <span className="text-ink-warm">{hovered.label}</span>: {formatValue(valueOf(hovered), hovered)}
           {hovered.books.length > 0 &&
             ` — ${hovered.books
               .slice(0, 3)
@@ -153,25 +153,25 @@ export function DistributionCard({
       )}
 
       {selected && (
-        <div className="mt-3 border-t border-hairline pt-3">
-          <p className="mb-2 text-xs font-medium text-ink">
+        <div className="mt-3 border-t border-gold pt-3">
+          <p className="mb-2 text-xs font-medium text-ink-warm">
             {selected.label} · {selected.books.length} book{selected.books.length === 1 ? "" : "s"}
           </p>
           {selected.books.length === 0 ? (
-            <p className="text-xs text-ink-faint">No books in this range.</p>
+            <p className="text-xs text-ink-warm-faint">No books in this range.</p>
           ) : (
             <ul className="max-h-72 space-y-2 overflow-y-auto">
               {selected.books.map((book) => (
                 <li key={book.book_id} className="flex items-center gap-2">
                   <CoverThumb title={book.title} coverUrl={book.cover_url} />
                   <div className="min-w-0 flex-1">
-                    <Link href={`/books/${book.book_id}`} className="block truncate text-sm text-ink hover:underline">
+                    <Link href={`/books/${book.book_id}`} className="block truncate text-sm text-ink-warm hover:underline">
                       {book.title}
                     </Link>
-                    <p className="truncate text-xs text-ink-faint">{book.author}</p>
+                    <p className="truncate text-xs text-ink-warm-faint">{book.author}</p>
                   </div>
                   {drillValue && (
-                    <span className="shrink-0 text-xs text-ink-faint">{drillValue(book)}</span>
+                    <span className="shrink-0 text-xs text-ink-warm-faint">{drillValue(book)}</span>
                   )}
                 </li>
               ))}

@@ -82,7 +82,7 @@ export function ScoreStep({
           value={score}
           onChange={(e) => setScore(e.target.value)}
           placeholder="0.5 - 5"
-          className="w-32 rounded-lg border border-hairline bg-card px-4 py-3 text-center text-3xl text-ink outline-none focus:ring-2 focus:ring-accent/40"
+          className="w-32 rounded-lg border border-gold bg-surface-1 px-4 py-3 text-center text-3xl text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
           autoFocus
         />
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

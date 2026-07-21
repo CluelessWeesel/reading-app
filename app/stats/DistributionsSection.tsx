@@ -317,7 +317,7 @@ export function DistributionsSection({
           onClick={() => setIndieOnly((v) => !v)}
           aria-pressed={indieOnly}
           className={`rounded-full border px-3 py-1 text-xs transition ${
-            indieOnly ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
+            indieOnly ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint hover:text-ink-warm"
           }`}
         >
           Indie only

@@ -100,7 +100,7 @@ export function RadarRatingsStep({
   if (slots === null) {
     return (
       <CeremonyStepShell title="Radar ratings" stepIndex={stepIndex} totalSteps={totalSteps} onNext={onSkip} onSkip={onSkip} onBack={onBack}>
-        <p className="text-sm text-ink-faint">Loading...</p>
+        <p className="text-sm text-ink-warm-faint">Loading...</p>
       </CeremonyStepShell>
     );
   }
@@ -121,20 +121,20 @@ export function RadarRatingsStep({
 
         <div className="space-y-3">
           {slots.map((slot, i) => (
-            <div key={i} className="rounded-lg border border-hairline bg-card/50 p-3">
+            <div key={i} className="rounded-lg border border-gold bg-surface-1 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-ink">{slot.category}</span>
+                <span className="text-sm font-medium text-ink-warm">{slot.category}</span>
                 <button
                   type="button"
                   onClick={() => setSwapOpenFor(swapOpenFor === i ? null : i)}
-                  className="text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                  className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                 >
                   Swap
                 </button>
               </div>
               {swapOpenFor === i && (
                 <select
-                  className="mb-2 w-full rounded-lg border border-hairline bg-card px-2 py-1 text-sm text-ink"
+                  className="mb-2 w-full rounded-lg border border-gold bg-surface-1 px-2 py-1 text-sm text-ink-warm"
                   value=""
                   onChange={(e) => e.target.value && swapSlot(i, e.target.value)}
                 >
@@ -156,7 +156,7 @@ export function RadarRatingsStep({
                   value={slot.score ?? ""}
                   onChange={(e) => setSlotScore(i, e.target.value)}
                   placeholder="Skip"
-                  className="w-20 rounded-lg border border-hairline bg-card px-2 py-1.5 text-center text-ink outline-none focus:ring-2 focus:ring-accent/40"
+                  className="w-20 rounded-lg border border-gold bg-surface-1 px-2 py-1.5 text-center text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
                 />
                 {slot.score != null && <StarRating score={slot.score} />}
               </div>

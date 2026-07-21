@@ -135,12 +135,12 @@ export function LeaderboardCreator({
   }, [metric, groupBy, dateBasis, year, dateFrom, dateTo, format]);
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
-      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink`}>Leaderboard creator</h3>
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
+      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink-warm`}>Leaderboard creator</h3>
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">Group by</span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Group by</span>
           {GROUP_BY_OPTIONS.map((g) => (
             <button
               key={g.key}
@@ -155,7 +155,7 @@ export function LeaderboardCreator({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">Metric</span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Metric</span>
           {METRICS.map((m) => (
             <button key={m} type="button" onClick={() => setMetric(m)} aria-pressed={metric === m} className={pillClass(metric === m)}>
               {METRIC_LABELS[m]}
@@ -167,7 +167,7 @@ export function LeaderboardCreator({
               onClick={() => setMinBooksOn((v) => !v)}
               aria-pressed={minBooksOn}
               className={`rounded-full border px-3 py-1 text-xs transition ${
-                minBooksOn ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
+                minBooksOn ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint hover:text-ink-warm"
               }`}
             >
               2+ books
@@ -176,7 +176,7 @@ export function LeaderboardCreator({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">Date basis</span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Date basis</span>
           {(["year_read", "date_finished"] as DateBasis[]).map((d) => (
             <button key={d} type="button" onClick={() => setDateBasis(d)} aria-pressed={dateBasis === d} className={pillClass(dateBasis === d)}>
               {d === "year_read" ? "Year read" : "Date finished"}
@@ -187,7 +187,7 @@ export function LeaderboardCreator({
             <select
               value={year}
               onChange={(e) => setYear(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="rounded-full border border-hairline bg-card/70 px-3 py-1 text-xs text-ink shadow-sm outline-none focus:ring-2 focus:ring-accent/40"
+              className="rounded-full border border-gold bg-surface-1 px-3 py-1 text-xs text-ink-warm shadow-sm outline-none focus:ring-2 focus:ring-accent/40"
             >
               <option value="all">All time</option>
               {years.map((y) => (
@@ -203,22 +203,22 @@ export function LeaderboardCreator({
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 aria-label="Finished after"
-                className="rounded-full border border-hairline bg-card/70 px-3 py-1 text-xs text-ink shadow-sm outline-none focus:ring-2 focus:ring-accent/40"
+                className="rounded-full border border-gold bg-surface-1 px-3 py-1 text-xs text-ink-warm shadow-sm outline-none focus:ring-2 focus:ring-accent/40"
               />
-              <span className="text-xs text-ink-faint">to</span>
+              <span className="text-xs text-ink-warm-faint">to</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 aria-label="Finished before"
-                className="rounded-full border border-hairline bg-card/70 px-3 py-1 text-xs text-ink shadow-sm outline-none focus:ring-2 focus:ring-accent/40"
+                className="rounded-full border border-gold bg-surface-1 px-3 py-1 text-xs text-ink-warm shadow-sm outline-none focus:ring-2 focus:ring-accent/40"
               />
             </>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">Format</span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Format</span>
           {FORMAT_FILTERS.map((f) => (
             <button key={f} type="button" onClick={() => setFormat(f)} aria-pressed={format === f} className={pillClass(format === f)}>
               {f === "all" ? "All" : (FORMAT_LABELS[f] ?? f)}
@@ -227,7 +227,7 @@ export function LeaderboardCreator({
         </div>
       </div>
 
-      <p className="mb-2 mt-4 text-xs text-ink-faint">{description}</p>
+      <p className="mb-2 mt-4 text-xs text-ink-warm-faint">{description}</p>
 
       <RankedList
         entries={results}

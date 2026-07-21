@@ -15,7 +15,7 @@ const FORMATS = ["physical", "ebook", "audio"];
 
 function pillClass(active: boolean): string {
   return `rounded-full px-3 py-1.5 text-xs font-medium transition ${
-    active ? "bg-accent text-on-accent" : "border border-hairline text-ink-muted hover:bg-hover"
+    active ? "bg-accent text-on-accent" : "border border-gold text-ink-warm-muted hover:bg-hover"
   }`;
 }
 
@@ -29,7 +29,7 @@ function toggle<T>(set: Set<T>, value: T): Set<T> {
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-4">
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-faint">{label}</p>
+      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-warm-faint">{label}</p>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
   );
@@ -41,26 +41,33 @@ function AuthorRankedTable({
   title,
   entries,
   photos,
+  narratorPhotos,
 }: {
   title: string;
   entries: CrownEntry[];
   photos: Record<number, string | null>;
+  narratorPhotos: Record<number, string | null>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? entries : entries.slice(0, PAGE_SIZE);
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
-      <h2 className={`${fraunces.className} mb-3 text-base font-semibold text-ink`}>{title}</h2>
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
+      <h2 className={`${fraunces.className} mb-3 text-base font-semibold text-ink-warm`}>{title}</h2>
       {entries.length === 0 ? (
-        <p className="py-6 text-center text-sm text-ink-faint">No {title.toLowerCase()} match these filters.</p>
+        <p className="py-6 text-center text-sm text-ink-warm-faint">No {title.toLowerCase()} match these filters.</p>
       ) : (
         <>
-          <ul className="divide-y divide-hairline">
+          <ul className="divide-y divide-gold">
             {shown.map((e, i) => {
               const { background, color } = rankColor(i + 1, entries.length);
+              // Best Narration entries carry a narratorId instead of an
+              // authorId (see weeselMath.ts's creditedNarratorId) -- checked
+              // first so a narrator's row links to their own page.
+              const href = e.narratorId != null ? `/narrators/${e.narratorId}` : e.authorId != null ? `/authors/${e.authorId}` : null;
+              const photoUrl = e.narratorId != null ? (narratorPhotos[e.narratorId] ?? null) : e.authorId != null ? (photos[e.authorId] ?? null) : null;
               return (
-                <li key={e.authorId ?? `${e.label}-${i}`} className="flex items-center gap-3 py-2">
+                <li key={e.authorId ?? e.narratorId ?? `${e.label}-${i}`} className="flex items-center gap-3 py-2">
                   <span
                     className="flex w-7 shrink-0 items-center justify-center rounded-full py-0.5 text-xs font-medium"
                     style={{ background, color }}
@@ -69,18 +76,18 @@ function AuthorRankedTable({
                   </span>
                   <AuthorPhoto
                     name={e.label}
-                    photoUrl={e.authorId != null ? photos[e.authorId] ?? null : null}
+                    photoUrl={photoUrl}
                     className="aspect-square w-8 shrink-0"
                     initialClassName="text-xs"
                   />
-                  {e.authorId != null ? (
-                    <Link href={`/authors/${e.authorId}`} className="min-w-0 flex-1 truncate text-sm text-ink hover:underline">
+                  {href != null ? (
+                    <Link href={href} className="min-w-0 flex-1 truncate text-sm text-ink-warm hover:underline">
                       {e.label}
                     </Link>
                   ) : (
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink">{e.label}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink-warm">{e.label}</span>
                   )}
-                  <span className="shrink-0 text-sm font-semibold text-ink">{e.count}</span>
+                  <span className="shrink-0 text-sm font-semibold text-ink-warm">{e.count}</span>
                 </li>
               );
             })}
@@ -89,7 +96,7 @@ function AuthorRankedTable({
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="mt-2 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+              className="mt-2 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
             >
               {expanded ? "Show top 10" : `Show all ${entries.length}`}
             </button>
@@ -104,10 +111,12 @@ export function AuthorWinsBoard({
   rows,
   categories,
   photos,
+  narratorPhotos,
 }: {
   rows: WeeselRow[];
   categories: WeeselCategory[];
   photos: Record<number, string | null>;
+  narratorPhotos: Record<number, string | null>;
 }) {
   const categoriesById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const years = useMemo(() => Array.from(new Set(rows.map((r) => r.year))).sort((a, b) => a - b), [rows]);
@@ -145,13 +154,13 @@ export function AuthorWinsBoard({
   );
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-4xl">
         <header className="mb-6">
-          <Link href="/weesels" className="mb-2 inline-block text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink">
+          <Link href="/weesels" className="mb-2 inline-block text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm">
             &larr; Back to Weesels
           </Link>
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink`}>Author wins &amp; nominations</h1>
+          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm`}>Author wins &amp; nominations</h1>
         </header>
 
         <FilterGroup label="Year">
@@ -205,8 +214,8 @@ export function AuthorWinsBoard({
         </FilterGroup>
 
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <AuthorRankedTable title="Wins" entries={winEntries} photos={photos} />
-          <AuthorRankedTable title="Nominations" entries={nomEntries} photos={photos} />
+          <AuthorRankedTable title="Wins" entries={winEntries} photos={photos} narratorPhotos={narratorPhotos} />
+          <AuthorRankedTable title="Nominations" entries={nomEntries} photos={photos} narratorPhotos={narratorPhotos} />
         </div>
       </div>
     </div>

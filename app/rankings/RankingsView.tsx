@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Cover } from "../shared/Cover";
 import { fraunces } from "../shared/fonts";
 import { HonourBadge } from "../shared/HonourBadge";
 import type { HonourItem } from "../shared/HonourBadge";
+import { todayLocalIso } from "../shared/isoDate";
+import { classifyYearEdit } from "../shared/adjustmentWindow";
+import { EditGuardModal } from "../shared/EditGuardModal";
+import { AdjustmentWindowPanel } from "./AdjustmentWindowPanel";
 import { Podium } from "./Podium";
-import type { Movement, RankedRow, UnrankedRow, YearData } from "./types";
+import type { AdjustmentWindowData, Movement, RankedRow, UnrankedRow, YearData } from "./types";
 
-const ROW_HEIGHT = 64; // px -- matches the h-16 row class; drag math assumes fixed-height rows
+const ROW_HEIGHT = 40; // px -- matches the h-10 row class; drag math assumes fixed-height rows
 
 type DragState = { bookId: number; startIndex: number; currentIndex: number; offsetY: number };
 
@@ -27,11 +31,11 @@ function rowShift(index: number, drag: DragState | null): number {
 
 function MovementIndicator({ movement }: { movement?: Movement }) {
   if (!movement || movement.old_rank == null) {
-    return <span className="w-12 shrink-0 text-center text-xs text-ink-faint">—</span>;
+    return <span className="w-12 shrink-0 text-center text-xs text-ink-warm-faint">—</span>;
   }
   const delta = movement.old_rank - movement.new_rank; // positive = rank number went down = moved up
   if (delta === 0) {
-    return <span className="w-12 shrink-0 text-center text-xs text-ink-faint">—</span>;
+    return <span className="w-12 shrink-0 text-center text-xs text-ink-warm-faint">—</span>;
   }
   const up = delta > 0;
   return (
@@ -65,14 +69,14 @@ function InsertPicker({
     return idx + 1 + (idx > insertAfter ? 1 : 0);
   }
   return (
-    <div className="mt-2 rounded-lg border border-hairline bg-paper p-2">
-      <p className="mb-2 text-xs text-ink-faint">Tap where it lands.</p>
-      <div className="max-h-64 overflow-y-auto rounded-md border border-hairline">
+    <div className="mt-2 rounded-lg border border-gold bg-surface-1 p-2">
+      <p className="mb-2 text-xs text-ink-warm-faint">Tap where it lands.</p>
+      <div className="max-h-64 overflow-y-auto rounded-md border border-gold">
         <button
           type="button"
           onClick={() => onChangeInsertAfter(-1)}
-          className={`block w-full border-b border-hairline px-2 py-1.5 text-left text-xs last:border-0 ${
-            insertAfter === -1 ? "bg-accent/10 font-medium text-ink" : "text-ink-faint hover:bg-hover"
+          className={`block w-full border-b border-gold px-2 py-1.5 text-left text-xs last:border-0 ${
+            insertAfter === -1 ? "bg-accent/10 font-medium text-ink-warm" : "text-ink-warm-faint hover:bg-hover"
           }`}
         >
           Place at #1
@@ -82,8 +86,8 @@ function InsertPicker({
             key={r.book_id ?? idx}
             type="button"
             onClick={() => onChangeInsertAfter(idx)}
-            className={`flex w-full items-center gap-2 border-b border-hairline px-2 py-1.5 text-left text-xs last:border-0 ${
-              insertAfter === idx ? "bg-hover font-medium text-ink" : "text-ink-faint hover:bg-hover"
+            className={`flex w-full items-center gap-2 border-b border-gold px-2 py-1.5 text-left text-xs last:border-0 ${
+              insertAfter === idx ? "bg-hover font-medium text-ink-warm" : "text-ink-warm-faint hover:bg-hover"
             }`}
           >
             <span className="w-5 text-right">{displayRank(idx)}</span>
@@ -95,7 +99,7 @@ function InsertPicker({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-hairline px-3 py-1 text-xs text-ink-muted hover:bg-hover"
+          className="rounded-full border border-gold px-3 py-1 text-xs text-ink-warm-muted hover:bg-hover"
         >
           Cancel
         </button>
@@ -118,12 +122,14 @@ export function RankingsView({
   defaultYear,
   bookHonours,
   sealedYears,
+  adjustmentWindow,
 }: {
   data: Record<number, YearData>;
   years: number[];
   defaultYear: number;
   bookHonours: Record<number, HonourItem[]>;
   sealedYears: number[];
+  adjustmentWindow: AdjustmentWindowData;
 }) {
   const [dataByYear, setDataByYear] = useState(initialData);
   const [activeYear, setActiveYear] = useState(defaultYear);
@@ -136,6 +142,15 @@ export function RankingsView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [pendingReorder, setPendingReorder] = useState<{
+    bookId: number;
+    title: string;
+    year: number;
+    oldRank: number;
+    newRank: number;
+    classification: "adjustment" | "historical";
+  } | null>(null);
+  const pendingDragIndices = useRef<{ startIndex: number; currentIndex: number } | null>(null);
 
   const yearData = dataByYear[activeYear];
 
@@ -180,9 +195,17 @@ export function RankingsView({
     window.addEventListener("pointercancel", onUp);
   }
 
-  function commitDrag(bookId: number, startIndex: number, currentIndex: number) {
-    if (startIndex === currentIndex) return;
-    const year = activeYear;
+  // Reorders the local array optimistically and fires the actual request,
+  // reverting on failure -- shared by the unguarded ("current" year) path
+  // and the guarded confirm handler below, once a reason/confirmation (if
+  // any) has been obtained.
+  function applyReorder(
+    bookId: number,
+    year: number,
+    startIndex: number,
+    currentIndex: number,
+    extra: Record<string, unknown>
+  ) {
     const oldRank = startIndex + 1;
     const newRank = currentIndex + 1;
 
@@ -194,23 +217,13 @@ export function RankingsView({
       return { ...prev, [year]: { ...yd, ranked: reordered } };
     });
 
-    fetch("/api/book-rankings/reorder", {
+    return fetch("/api/book-rankings/reorder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, book_id: bookId, rank: newRank }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || "Reorder failed.");
-        }
-        setDataByYear((prev) => {
-          const yd = prev[year];
-          return { ...prev, [year]: { ...yd, movements: { ...yd.movements, [bookId]: { old_rank: oldRank, new_rank: newRank } } } };
-        });
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Reorder failed.");
+      body: JSON.stringify({ year, book_id: bookId, rank: newRank, ...extra }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const resBody = await res.json().catch(() => ({}));
         setDataByYear((prev) => {
           const yd = prev[year];
           const reverted = [...yd.ranked];
@@ -218,7 +231,50 @@ export function RankingsView({
           reverted.splice(startIndex, 0, moved);
           return { ...prev, [year]: { ...yd, ranked: reverted } };
         });
+        throw new Error(resBody.error || "Reorder failed.");
+      }
+      setDataByYear((prev) => {
+        const yd = prev[year];
+        return { ...prev, [year]: { ...yd, movements: { ...yd.movements, [bookId]: { old_rank: oldRank, new_rank: newRank } } } };
       });
+    });
+  }
+
+  function commitDrag(bookId: number, startIndex: number, currentIndex: number) {
+    if (startIndex === currentIndex) return;
+    const year = activeYear;
+    const classification = classifyYearEdit(year, todayLocalIso());
+
+    if (classification === "current") {
+      applyReorder(bookId, year, startIndex, currentIndex, {}).catch((err) => {
+        setError(err instanceof Error ? err.message : "Reorder failed.");
+      });
+      return;
+    }
+
+    const row = yearData.ranked[startIndex];
+    setPendingReorder({
+      bookId,
+      title: row.title,
+      year,
+      oldRank: startIndex + 1,
+      newRank: currentIndex + 1,
+      classification,
+    });
+    // Stashed for the guard's confirm handler, since startIndex/currentIndex
+    // aren't otherwise carried on pendingReorder.
+    pendingDragIndices.current = { startIndex, currentIndex };
+  }
+
+  async function confirmPendingReorder(reason?: string) {
+    if (!pendingReorder || !pendingDragIndices.current) return;
+    const { bookId, year, classification } = pendingReorder;
+    const { startIndex, currentIndex } = pendingDragIndices.current;
+    const extra =
+      classification === "adjustment" ? { reason } : { historicalConfirmed: true };
+    await applyReorder(bookId, year, startIndex, currentIndex, extra);
+    setPendingReorder(null);
+    pendingDragIndices.current = null;
   }
 
   function openInsertPicker(entry: UnrankedRow) {
@@ -283,7 +339,7 @@ export function RankingsView({
 
   return (
     <>
-        <div className="mb-6 flex gap-2 overflow-x-auto">
+        <div className="mb-4 flex gap-2 overflow-x-auto">
           {years.map((y) => (
             <button
               key={y}
@@ -300,7 +356,7 @@ export function RankingsView({
               className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
                 activeYear === y
                   ? "bg-accent text-on-accent"
-                  : "border border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                  : "border border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
               }`}
             >
               {y}
@@ -308,13 +364,15 @@ export function RankingsView({
           ))}
         </div>
 
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-ink-faint">
+        {activeYear === adjustmentWindow.year && <AdjustmentWindowPanel data={adjustmentWindow} />}
+
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-ink-warm-faint">
             {yearData.ranked.length} ranked ·{" "}
             <button
               type="button"
               onClick={() => setShowUnranked((v) => !v)}
-              className="underline decoration-dotted underline-offset-4 hover:text-ink"
+              className="underline decoration-dotted underline-offset-4 hover:text-ink-warm"
             >
               {yearData.unranked.length} unranked
             </button>
@@ -325,7 +383,7 @@ export function RankingsView({
               onClick={() => setShowHonours((v) => !v)}
               aria-pressed={showHonours}
               className={`rounded-full border px-3 py-1 text-xs transition ${
-                showHonours ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
+                showHonours ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint hover:text-ink-warm"
               }`}
             >
               Show honours
@@ -336,7 +394,7 @@ export function RankingsView({
                 onClick={() => setPodiumMode((v) => !v)}
                 aria-pressed={podiumMode}
                 className={`rounded-full border px-3 py-1 text-xs transition ${
-                  podiumMode ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
+                  podiumMode ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint hover:text-ink-warm"
                 }`}
               >
                 Podium
@@ -350,9 +408,9 @@ export function RankingsView({
         {podiumMode && sealedSet.has(activeYear) && <Podium ranked={yearData.ranked} />}
 
         {yearData.ranked.length === 0 ? (
-          <p className="py-16 text-center text-sm text-ink-faint">No books ranked for {activeYear} yet.</p>
+          <p className="py-16 text-center text-sm text-ink-warm-faint">No books ranked for {activeYear} yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-hairline">
+          <div className="overflow-hidden rounded-xl border border-gold">
             {yearData.ranked.map((row, index) => {
               const isDragging = drag?.bookId === row.book_id && row.book_id != null;
               const shift = row.book_id != null ? rowShift(index, drag) : 0;
@@ -373,7 +431,7 @@ export function RankingsView({
                     zIndex: isDragging ? 10 : undefined,
                     position: isDragging ? "relative" : undefined,
                   }}
-                  className={`flex h-16 items-center gap-3 border-b border-hairline bg-paper px-3 last:border-0 ${
+                  className={`flex h-10 items-center gap-2 border-b border-gold bg-surface-1 px-2.5 last:border-0 ${
                     isDragging ? "shadow-lg" : ""
                   }`}
                 >
@@ -382,13 +440,23 @@ export function RankingsView({
                     onPointerDown={(e) => row.book_id != null && handlePointerDown(e, row.book_id, index)}
                     disabled={row.book_id == null}
                     aria-label="Drag to reorder"
-                    className="touch-none select-none px-1 py-2 text-lg leading-none text-ink-faint disabled:opacity-30 active:cursor-grabbing"
+                    className="touch-none select-none px-0.5 py-2 leading-none text-ink-warm-faint disabled:opacity-30 active:cursor-grabbing"
                   >
                     ⠿
                   </button>
 
-                  <span className={`${fraunces.className} w-8 shrink-0 text-right text-2xl font-semibold text-ink`}>
+                  <span
+                    className={`${fraunces.className} relative w-5 shrink-0 text-right text-sm font-semibold text-ink-warm`}
+                  >
                     {index + 1}
+                    {row.had_star && (
+                      <span
+                        className="absolute -right-1.5 -top-1 text-[9px] text-accent-amber"
+                        title="Adjusted before this app existed"
+                      >
+                        ✱
+                      </span>
+                    )}
                   </span>
 
                   <Cover
@@ -397,22 +465,20 @@ export function RankingsView({
                     coverUrl={row.cover_url}
                     onCoverChange={handleCoverChange}
                     apiPath={`/api/books/${row.book_id ?? 0}/cover`}
-                    className="aspect-[2/3] w-9"
-                    initialClassName="text-xs"
+                    className="aspect-[2/3] w-6 shrink-0"
+                    initialClassName="text-[8px]"
                   />
 
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 truncate text-sm">
                     {row.book_id != null ? (
-                      <Link
-                        href={`/books/${row.book_id}`}
-                        className={`${fraunces.className} block truncate text-sm font-semibold text-ink hover:underline`}
-                      >
+                      <Link href={`/books/${row.book_id}`} className={`${fraunces.className} font-semibold text-ink-warm hover:underline`}>
                         {row.title}
                       </Link>
                     ) : (
-                      <p className={`${fraunces.className} truncate text-sm font-semibold text-ink`}>{row.title}</p>
+                      <span className={`${fraunces.className} font-semibold text-ink-warm`}>{row.title}</span>
                     )}
-                    <p className="truncate text-xs text-ink-faint">
+                    <span className="text-ink-warm-faint">
+                      {" · "}
                       {row.author_id != null ? (
                         <Link href={`/authors/${row.author_id}`} className="hover:underline">
                           {row.author}
@@ -421,7 +487,7 @@ export function RankingsView({
                         (row.author ?? "Unknown author")
                       )}
                       {row.score != null ? ` · ${row.score.toFixed(2)}` : ""}
-                    </p>
+                    </span>
                   </div>
 
                   {showHonours && row.book_id != null && (
@@ -436,12 +502,12 @@ export function RankingsView({
         )}
 
         {showUnranked && (
-          <div className="mt-6 rounded-xl border border-hairline bg-card/40 p-4">
-            <h2 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink`}>Unranked</h2>
+          <div className="mt-6 rounded-xl border border-gold bg-surface-1 p-4">
+            <h2 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink-warm`}>Unranked</h2>
             {yearData.unranked.length === 0 ? (
-              <p className="text-sm text-ink-faint">Every {activeYear} read is ranked.</p>
+              <p className="text-sm text-ink-warm-faint">Every {activeYear} read is ranked.</p>
             ) : (
-              <ul className="divide-y divide-hairline">
+              <ul className="divide-y divide-gold">
                 {yearData.unranked.map((entry) => (
                   <li key={entry.book_id} className="py-2">
                     <div className="flex items-center gap-3">
@@ -455,8 +521,8 @@ export function RankingsView({
                         initialClassName="text-xs"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-ink">{entry.title}</p>
-                        <p className="truncate text-xs text-ink-faint">
+                        <p className="truncate text-sm font-medium text-ink-warm">{entry.title}</p>
+                        <p className="truncate text-xs text-ink-warm-faint">
                           {entry.author_id != null ? (
                             <Link href={`/authors/${entry.author_id}`} className="hover:underline">
                               {entry.author}
@@ -469,7 +535,7 @@ export function RankingsView({
                       <button
                         type="button"
                         onClick={() => openInsertPicker(entry)}
-                        className="shrink-0 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                        className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                       >
                         Insert into rankings
                       </button>
@@ -489,6 +555,20 @@ export function RankingsView({
               </ul>
             )}
           </div>
+        )}
+
+        {pendingReorder && (
+          <EditGuardModal
+            mode={pendingReorder.classification}
+            title={pendingReorder.classification === "adjustment" ? "Log an adjustment" : "Edit a finalized year"}
+            description={`"${pendingReorder.title}" -- #${pendingReorder.oldRank} → #${pendingReorder.newRank}`}
+            year={pendingReorder.year}
+            onConfirm={confirmPendingReorder}
+            onCancel={() => {
+              setPendingReorder(null);
+              pendingDragIndices.current = null;
+            }}
+          />
         )}
     </>
   );

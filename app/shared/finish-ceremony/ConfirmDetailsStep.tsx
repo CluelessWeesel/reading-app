@@ -245,7 +245,7 @@ export function ConfirmDetailsStep({
             <input id="cf-date-finished" className={fieldClass()} type="date" value={form.date_finished} onChange={(e) => set("date_finished", e.target.value)} />
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-ink">
+        <label className="flex items-center gap-2 text-sm text-ink-warm">
           <input type="checkbox" checked={form.reread} onChange={(e) => set("reread", e.target.checked)} className="accent-accent" />
           Reread
         </label>

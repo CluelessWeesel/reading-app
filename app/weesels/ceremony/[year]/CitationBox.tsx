@@ -27,14 +27,14 @@ export function CitationBox({
     return (
       <div className="mt-6 text-center">
         {initialCitation ? (
-          <p className="text-sm italic text-ink-muted">&ldquo;{initialCitation}&rdquo;</p>
+          <p className="text-sm italic text-ink-warm-muted">&ldquo;{initialCitation}&rdquo;</p>
         ) : (
-          <p className="text-sm text-ink-faint">No citation yet.</p>
+          <p className="text-sm text-ink-warm-faint">No citation yet.</p>
         )}
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="mt-1 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+          className="mt-1 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
         >
           {initialCitation ? "Edit citation" : "Add a citation"}
         </button>
@@ -43,15 +43,15 @@ export function CitationBox({
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-hairline bg-card/90 p-4 shadow-lg">
-      <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-faint">Why they won</label>
+    <div className="mt-6 rounded-xl border border-gold bg-surface-1 p-4 shadow-lg">
+      <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Why they won</label>
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         rows={3}
         autoFocus
         placeholder="What made this the one..."
-        className="w-full rounded-lg border border-hairline bg-paper px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-accent/40"
+        className="w-full rounded-lg border border-gold bg-surface-1 px-3 py-2 text-sm text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
       />
       <div className="mt-2 flex justify-center gap-2">
         <button
@@ -65,7 +65,7 @@ export function CitationBox({
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="rounded-full border border-hairline px-3 py-1 text-xs text-ink-muted hover:bg-hover"
+          className="rounded-full border border-gold px-3 py-1 text-xs text-ink-warm-muted hover:bg-hover"
         >
           Skip for now
         </button>

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { fraunces } from "./fonts";
 import { fieldClass, modalLabelClass } from "./formControls";
 import { FORMAT_LABELS } from "./formatLabels";
+import { todayLocalIso } from "./isoDate";
+import { classifyYearEdit } from "./adjustmentWindow";
+import { EditGuardModal } from "./EditGuardModal";
 import type { Book } from "./bookTypes";
 
 type FormState = {
@@ -117,6 +120,7 @@ export function EditBookModal({
   book,
   allGenres,
   seriesOptions,
+  subgenreOptions,
   metadataError,
   onRetryMetadata,
   onClose,
@@ -126,6 +130,7 @@ export function EditBookModal({
   book: Book;
   allGenres: string[];
   seriesOptions: string[];
+  subgenreOptions: string[];
   metadataError?: boolean;
   onRetryMetadata?: () => void;
   onClose: () => void;
@@ -184,6 +189,48 @@ export function EditBookModal({
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  const [pendingScoreGuard, setPendingScoreGuard] = useState<"adjustment" | "historical" | null>(null);
+
+  function buildPayload() {
+    return {
+      title: form.title.trim(),
+      author: form.author.trim() || null,
+      series: form.series.trim() || null,
+      series_number: form.series_number.trim() ? Number(form.series_number) : null,
+      genre: form.genre || null,
+      subgenre: form.subgenre.trim() || null,
+      year_released: form.year_released.trim() ? Number(form.year_released) : null,
+      year_read: form.year_read.trim() ? Number(form.year_read) : null,
+      score: form.score.trim() ? Number(form.score) : null,
+      predicted_score: form.predicted_score.trim() ? Number(form.predicted_score) : null,
+      predicted_margin: form.predicted_margin.trim() ? Number(form.predicted_margin) : null,
+      format_raw: form.format_raw.trim() || null,
+      format_type: form.format_type || null,
+      word_count: form.word_count.trim() ? Number(form.word_count) : null,
+      page_count: form.page_count.trim() ? Number(form.page_count) : null,
+      narrator: form.narrator.trim() || null,
+      reread: form.reread,
+      date_started: form.date_started || null,
+      date_finished: form.date_finished || null,
+      isbn: form.isbn.trim() || null,
+      status: form.status.trim() || null,
+      review: form.review.trim() || null,
+    };
+  }
+
+  async function submitPatch(extra: Record<string, unknown>) {
+    const res = await fetch(`/api/books/${book.book_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...buildPayload(), ...extra }),
+    });
+    const responseBody = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(responseBody.error || "Save failed.");
+    }
+    onSaved({ ...book, ...responseBody });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const validationError = validate(form);
@@ -192,50 +239,35 @@ export function EditBookModal({
       return;
     }
 
+    const scoreVal = form.score.trim() ? Number(form.score) : null;
+    const scoreChanged = scoreVal !== (book.score ?? null);
+
+    // The adjustment/historical gate only applies when the score is
+    // actually moving on a book whose year_read isn't the year currently
+    // being read -- see app/shared/adjustmentWindow.ts.
+    if (scoreChanged && book.year_read != null) {
+      const classification = classifyYearEdit(book.year_read, todayLocalIso());
+      if (classification !== "current") {
+        setPendingScoreGuard(classification);
+        return;
+      }
+    }
+
     setSaving(true);
     setError(null);
-
     try {
-      const res = await fetch(`/api/books/${book.book_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          author: form.author.trim() || null,
-          series: form.series.trim() || null,
-          series_number: form.series_number.trim() ? Number(form.series_number) : null,
-          genre: form.genre || null,
-          subgenre: form.subgenre.trim() || null,
-          year_released: form.year_released.trim() ? Number(form.year_released) : null,
-          year_read: form.year_read.trim() ? Number(form.year_read) : null,
-          score: form.score.trim() ? Number(form.score) : null,
-          predicted_score: form.predicted_score.trim() ? Number(form.predicted_score) : null,
-          predicted_margin: form.predicted_margin.trim() ? Number(form.predicted_margin) : null,
-          format_raw: form.format_raw.trim() || null,
-          format_type: form.format_type || null,
-          word_count: form.word_count.trim() ? Number(form.word_count) : null,
-          page_count: form.page_count.trim() ? Number(form.page_count) : null,
-          narrator: form.narrator.trim() || null,
-          reread: form.reread,
-          date_started: form.date_started || null,
-          date_finished: form.date_finished || null,
-          isbn: form.isbn.trim() || null,
-          status: form.status.trim() || null,
-          review: form.review.trim() || null,
-        }),
-      });
-
-      const responseBody = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(responseBody.error || "Save failed.");
-      }
-
-      onSaved({ ...book, ...responseBody });
+      await submitPatch({});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed.");
     } finally {
       setSaving(false);
     }
+  }
+
+  async function confirmScoreGuard(reason?: string) {
+    const extra = pendingScoreGuard === "adjustment" ? { reason } : { historicalConfirmed: true };
+    await submitPatch(extra);
+    setPendingScoreGuard(null);
   }
 
   return (
@@ -245,21 +277,21 @@ export function EditBookModal({
       role="presentation"
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-hairline bg-paper p-6 shadow-lg"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-gold bg-surface-3 p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-book-title"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id="edit-book-title" className={`${fraunces.className} text-xl font-semibold text-ink`}>
+          <h2 id="edit-book-title" className={`${fraunces.className} text-xl font-semibold text-ink-warm`}>
             Edit book
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full px-2 py-1 text-ink-faint hover:bg-hover hover:text-ink"
+            className="rounded-full px-2 py-1 text-ink-warm-faint hover:bg-hover hover:text-ink-warm"
           >
             ✕
           </button>
@@ -363,8 +395,14 @@ export function EditBookModal({
               className={fieldClass()}
               value={form.subgenre}
               onChange={(e) => set("subgenre", e.target.value)}
+              list="subgenre-options"
               placeholder="None"
             />
+            <datalist id="subgenre-options">
+              {subgenreOptions.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -530,7 +568,7 @@ export function EditBookModal({
               />
             </div>
             <div className="flex items-end pb-1.5">
-              <label className="flex items-center gap-2 text-sm text-ink">
+              <label className="flex items-center gap-2 text-sm text-ink-warm">
                 <input
                   type="checkbox"
                   checked={form.reread}
@@ -570,7 +608,7 @@ export function EditBookModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-hairline px-4 py-1.5 text-sm text-ink-muted hover:text-ink"
+                className="rounded-full border border-gold px-4 py-1.5 text-sm text-ink-warm-muted hover:text-ink-warm"
               >
                 Cancel
               </button>
@@ -585,6 +623,17 @@ export function EditBookModal({
           </div>
         </form>
       </div>
+
+      {pendingScoreGuard && book.year_read != null && (
+        <EditGuardModal
+          mode={pendingScoreGuard}
+          title={pendingScoreGuard === "adjustment" ? "Log an adjustment" : "Edit a finalized year"}
+          description={`"${book.title}" -- score ${book.score ?? "unscored"} → ${form.score.trim() || "unscored"}`}
+          year={book.year_read}
+          onConfirm={confirmScoreGuard}
+          onCancel={() => setPendingScoreGuard(null)}
+        />
+      )}
     </div>
   );
 }

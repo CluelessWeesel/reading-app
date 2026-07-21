@@ -64,14 +64,14 @@ export function AuthorHeader({
       />
 
       <div className="min-w-[220px] flex-1">
-        <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>{author.name}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
+        <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>{author.name}</h1>
+        <p className="mt-1 text-sm text-ink-warm-muted">
           {vitalsParts.join(" · ")}
           {firstRead && latestRead && ` · ${formatDateShort(firstRead)} → ${formatDateShort(latestRead)}`}
         </p>
 
         {(rankByPages != null || percentOfEverything != null) && (
-          <p className="mt-2 text-xs text-ink-faint">
+          <p className="mt-2 text-xs text-ink-warm-faint">
             {rankByPages != null && `Your ${ordinal(rankByPages)} of ${totalAuthors} by pages`}
             {rankByPages != null && percentileByPages != null && ` (${ordinal(Math.round(percentileByPages * 100))} percentile)`}
             {rankByPages != null && percentOfEverything != null && " · "}
@@ -80,7 +80,7 @@ export function AuthorHeader({
         )}
 
         {rankByScore != null && (
-          <p className="mt-1 text-xs text-ink-faint">
+          <p className="mt-1 text-xs text-ink-warm-faint">
             {`Your ${ordinal(rankByScore)} of ${totalAuthorsByScore} by rating`}
             {percentileByScore != null && ` (${ordinal(Math.round(percentileByScore * 100))} percentile)`}
           </p>

@@ -30,6 +30,22 @@ export function scopeDateRange(
   return { start, end };
 }
 
+// Reading almost always gets logged at the end of the day, not throughout
+// it -- so while a scope's window is still "open" (end === today), today
+// itself is present in totalDays before it has any real chance of having a
+// row yet. Dividing a per-day rate (or a goal projection) by that day as
+// if it were a full, already-counted day systematically understates every
+// such figure until the moment today's pages actually get logged. Once a
+// row for today exists (even a logged zero), it's real data and counts
+// like any other day. totalDays itself (a plain calendar count, used for
+// "day X of Y" style display) is left alone -- only the denominator used
+// for RATES is adjusted.
+function averagingDays(totalDays: number, end: string, today: string, dailyRows: DailyRow[]): number {
+  if (end !== today) return totalDays;
+  const todayLogged = dailyRows.some((r) => r.date === today);
+  return todayLogged ? totalDays : Math.max(1, totalDays - 1);
+}
+
 function buildSeries(dailyRows: DailyRow[], start: string, end: string) {
   const byDate = new Map(dailyRows.map((r) => [r.date, r.pages]));
   const series: { date: string; pages: number; cumulative: number }[] = [];
@@ -118,6 +134,7 @@ export function computeProjectionSeries(
   scope: Scope
 ): ProjectionYearSeries[] {
   const yearsToShow = scope.kind === "all" ? years : [scope.year];
+  const todayLogged = dailyRows.some((r) => r.date === today);
   return yearsToShow.map((year) => {
     const cumulative = buildYearSeriesByDayOfYear(dailyRows, year);
     const isRealCurrentYear = year === currentYear;
@@ -126,7 +143,16 @@ export function computeProjectionSeries(
       : cumulative.length - 1;
     const points = cumulative
       .filter((p) => p.x <= truncateAt)
-      .map((p) => ({ x: p.x, y: (p.y * 365) / (p.x + 1) }));
+      .map((p) => {
+        // The rightmost point of the current year's own line is "today" --
+        // if today hasn't been logged yet, dividing by (x+1) counts it as
+        // a full elapsed day before it's had any chance to contribute,
+        // dipping the line right at its most recent (most visible) point.
+        // Every earlier point is unaffected -- those days are fully past.
+        const isUnloggedToday = isRealCurrentYear && p.x === truncateAt && !todayLogged;
+        const divisor = isUnloggedToday ? Math.max(1, p.x) : p.x + 1;
+        return { x: p.x, y: (p.y * 365) / divisor };
+      });
     return { year, points, isCurrent: scope.kind === "year" ? true : isRealCurrentYear };
   });
 }
@@ -190,8 +216,9 @@ export function computeScopeData({
       : 0;
   const totalWordsEstimate = totalPages * globalWordsPerPage;
 
-  const pagesPerDay = totalDays > 0 ? totalPages / totalDays : 0;
-  const wordsPerDay = totalDays > 0 ? totalWordsEstimate / totalDays : 0;
+  const avgDays = averagingDays(totalDays, end, today, dailyRows);
+  const pagesPerDay = avgDays > 0 ? totalPages / avgDays : 0;
+  const wordsPerDay = avgDays > 0 ? totalWordsEstimate / avgDays : 0;
 
   const goal = scope.kind === "year" ? (goals.find((g) => g.year === scope.year)?.pages_goal ?? null) : null;
   let projection: ProjectionInfo | null = null;
@@ -200,7 +227,7 @@ export function computeScopeData({
   if (scope.kind === "year" && goal != null) {
     if (scope.year === currentYear) {
       const daysInFullYear = daysBetweenInclusive(`${scope.year}-01-01`, `${scope.year}-12-31`);
-      const avgPace = totalDays > 0 ? totalPages / totalDays : 0;
+      const avgPace = avgDays > 0 ? totalPages / avgDays : 0;
       const projectedTotal = avgPace * daysInFullYear;
       projection = { projectedTotal, verdict: projectedTotal >= goal ? "on track" : "behind pace" };
     } else {

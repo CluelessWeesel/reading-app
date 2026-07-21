@@ -76,21 +76,21 @@ export function EditTab({
 
   if (rows.length === 0) {
     return (
-      <p className="py-12 text-center text-sm text-ink-faint">
+      <p className="py-12 text-center text-sm text-ink-warm-faint">
         No daily reading entries in the last 30 days.
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-hairline">
+    <ul className="surface-flat divide-y divide-gold rounded-xl p-4">
       {grouped.map(([date, dateRows]) => (
-        <li key={date} className="py-3">
-          <p className="mb-2 text-sm font-medium text-ink">{date}</p>
+        <li key={date} className="py-3 first:pt-0">
+          <p className="mb-2 text-sm font-medium text-ink-warm">{date}</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             {dateRows.map((row) => (
               <div key={row.id} className="flex flex-wrap items-center gap-2">
-                <span className="max-w-[140px] truncate text-xs text-ink-faint">
+                <span className="max-w-[140px] truncate text-xs text-ink-warm-faint">
                   {row.book_title ?? "Combined (historical)"}
                 </span>
                 <input
@@ -105,13 +105,13 @@ export function EditTab({
                       return next;
                     });
                   }}
-                  className="w-16 rounded-lg border border-hairline bg-card px-2 py-1 text-center text-sm text-ink outline-none focus:ring-2 focus:ring-accent/40"
+                  className="w-16 rounded-lg border border-gold bg-surface-1 px-2 py-1 text-center text-sm text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
                 />
                 <button
                   type="button"
                   onClick={() => handleSave(row)}
                   disabled={saving[row.id]}
-                  className="shrink-0 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink disabled:opacity-50"
+                  className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm disabled:opacity-50"
                 >
                   {saving[row.id] ? "..." : "Save"}
                 </button>

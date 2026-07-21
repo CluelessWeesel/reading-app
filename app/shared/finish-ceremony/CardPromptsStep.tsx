@@ -89,7 +89,7 @@ export function CardPromptsStep({
   if (prompts === null) {
     return (
       <CeremonyStepShell title="A few questions" stepIndex={stepIndex} totalSteps={totalSteps} onNext={onNext} onSkip={onNext} onBack={onBack}>
-        <p className="text-sm text-ink-faint">Loading...</p>
+        <p className="text-sm text-ink-warm-faint">Loading...</p>
       </CeremonyStepShell>
     );
   }
@@ -107,17 +107,17 @@ export function CardPromptsStep({
     >
       <div className="space-y-4">
         {prompts.length === 0 && (
-          <p className="text-sm text-ink-faint">No prompts available right now.</p>
+          <p className="text-sm text-ink-warm-faint">No prompts available right now.</p>
         )}
         {prompts.map((prompt, i) => (
-          <div key={prompt.id} className="rounded-lg border border-hairline bg-card/50 p-3">
+          <div key={prompt.id} className="rounded-lg border border-gold bg-surface-1 p-3">
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="text-sm font-medium text-ink">{prompt.question}</p>
+              <p className="text-sm font-medium text-ink-warm">{prompt.question}</p>
               <button
                 type="button"
                 onClick={() => handleReroll(i)}
                 disabled={rerolling[i]}
-                className="shrink-0 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink disabled:opacity-50"
+                className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm disabled:opacity-50"
               >
                 {rerolling[i] ? "..." : "Reroll"}
               </button>
@@ -126,7 +126,7 @@ export function CardPromptsStep({
               value={answers[prompt.id] ?? ""}
               onChange={(e) => setAnswers((prev) => ({ ...prev, [prompt.id]: e.target.value }))}
               placeholder="Optional"
-              className="w-full rounded-lg border border-hairline bg-card p-2 text-sm text-ink outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full rounded-lg border border-gold bg-surface-1 p-2 text-sm text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
               rows={2}
             />
           </div>

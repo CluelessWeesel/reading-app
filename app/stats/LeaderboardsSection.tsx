@@ -20,9 +20,9 @@ import { SectionShell } from "./SectionShell";
 import type { BookSummary, Scope, SeriesParent } from "./types";
 
 function BookTitle({ entry }: { entry: LeaderboardEntry }) {
-  if (entry.bookId == null) return <span className="truncate text-ink">{entry.name}</span>;
+  if (entry.bookId == null) return <span className="truncate text-ink-warm">{entry.name}</span>;
   return (
-    <Link href={`/books/${entry.bookId}`} className="truncate text-ink hover:underline">
+    <Link href={`/books/${entry.bookId}`} className="truncate text-ink-warm hover:underline">
       {entry.name}
     </Link>
   );
@@ -43,7 +43,7 @@ function MinBooksToggle({
       onClick={onToggle}
       aria-pressed={on}
       className={`rounded-full border px-3 py-1 text-xs transition ${
-        on ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint hover:text-ink"
+        on ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint hover:text-ink-warm"
       }`}
     >
       {label}
@@ -80,8 +80,8 @@ function LeaderboardCard({
   const activeMetric = metricsToShow.includes(metric) ? metric : metricsToShow[0];
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
-      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink`}>{title}</h3>
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
+      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink-warm`}>{title}</h3>
 
       {dimensionToggle && (
         <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -138,8 +138,8 @@ function BookPaceCard({
   const [mode, setMode] = useState<"combined" | "split">("combined");
 
   return (
-    <div className="rounded-xl border border-hairline bg-card/40 p-4">
-      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink`}>Books, fastest to slowest</h3>
+    <div className="rounded-xl border border-gold bg-surface-1 p-4">
+      <h3 className={`${fraunces.className} mb-3 text-base font-semibold text-ink-warm`}>Books, fastest to slowest</h3>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => setMode("combined")} aria-pressed={mode === "combined"} className={pillClass(mode === "combined")}>
@@ -156,11 +156,11 @@ function BookPaceCard({
       ) : (
         <div className="space-y-4">
           <div>
-            <h4 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-faint">Physical</h4>
+            <h4 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Physical</h4>
             <RankedList entries={physical} renderName={(e) => <BookTitle entry={e} />} />
           </div>
           <div>
-            <h4 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-faint">Audio</h4>
+            <h4 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Audio</h4>
             <RankedList entries={audio} renderName={(e) => <BookTitle entry={e} />} />
           </div>
         </div>

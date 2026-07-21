@@ -103,10 +103,10 @@ export function StatsView({
   const scopeKey = scope.kind === "all" ? "all" : String(scope.year);
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6">
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>Stats</h1>
+          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>Stats</h1>
         </header>
 
         <div className="mb-2 flex flex-wrap gap-2">
@@ -119,7 +119,7 @@ export function StatsView({
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                 scope.kind === "year" && scope.year === y
                   ? "bg-accent text-on-accent"
-                  : "border border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                  : "border border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
               }`}
             >
               {y}
@@ -132,7 +132,7 @@ export function StatsView({
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
               scope.kind === "all"
                 ? "bg-accent text-on-accent"
-                : "border border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                : "border border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
             }`}
           >
             All time
@@ -147,7 +147,7 @@ export function StatsView({
             className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
               view === "graphs"
                 ? "border-accent bg-accent text-on-accent shadow-sm"
-                : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                : "border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
             }`}
           >
             Graphs
@@ -159,7 +159,7 @@ export function StatsView({
             className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
               view === "boards"
                 ? "border-accent bg-accent text-on-accent shadow-sm"
-                : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                : "border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
             }`}
           >
             Boards & Records
@@ -171,7 +171,7 @@ export function StatsView({
             className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
               view === "daily"
                 ? "border-accent bg-accent text-on-accent shadow-sm"
-                : "border-hairline bg-card/70 text-ink-muted hover:bg-hover"
+                : "border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
             }`}
           >
             Daily Log

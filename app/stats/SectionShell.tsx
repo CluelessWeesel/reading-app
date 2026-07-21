@@ -7,7 +7,7 @@ import { fraunces } from "../shared/fonts";
 export function SectionShell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-8 first:mt-0">
-      <h2 className={`${fraunces.className} mb-3 text-xl font-semibold text-ink`}>{title}</h2>
+      <h2 className={`${fraunces.className} mb-3 text-xl font-semibold text-ink-warm`}>{title}</h2>
       {children}
     </section>
   );

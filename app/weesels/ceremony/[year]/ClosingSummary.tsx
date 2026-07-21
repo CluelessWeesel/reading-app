@@ -37,15 +37,15 @@ export function ClosingSummary({
   }
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
         <header className="mb-6 text-center">
-          <p className="text-xs uppercase tracking-[0.2em] text-ink-faint">The night&apos;s winners</p>
-          <h1 className={`${fraunces.className} mt-1 text-3xl font-semibold text-ink sm:text-4xl`}>{year} Weesels</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-ink-warm-faint">The night&apos;s winners</p>
+          <h1 className={`${fraunces.className} mt-1 text-3xl font-semibold text-ink-warm sm:text-4xl`}>{year} Weesels</h1>
         </header>
 
         {runningCategories.length === 0 ? (
-          <p className="rounded-xl border border-hairline bg-card/40 p-6 text-center text-sm text-ink-faint">
+          <p className="rounded-xl border border-gold bg-surface-1 p-6 text-center text-sm text-ink-warm-faint">
             No categories ran this year.
           </p>
         ) : (
@@ -56,7 +56,7 @@ export function ClosingSummary({
               return (
                 <div
                   key={data.category.id}
-                  className="flex items-center gap-3 rounded-xl border border-hairline bg-card/40 p-3"
+                  className="flex items-center gap-3 rounded-xl border border-gold bg-surface-1 p-3"
                 >
                   {winner.bookId != null ? (
                     <CoverThumb title={winner.label} coverUrl={winner.coverUrl} className="aspect-[2/3] w-10" />
@@ -69,8 +69,8 @@ export function ClosingSummary({
                     />
                   )}
                   <div className="min-w-0">
-                    <p className="truncate text-xs text-ink-faint">{data.category.name}</p>
-                    <p className={`${fraunces.className} truncate text-sm font-semibold text-ink`}>🏆 {winner.label}</p>
+                    <p className="truncate text-xs text-ink-warm-faint">{data.category.name}</p>
+                    <p className={`${fraunces.className} truncate text-sm font-semibold text-ink-warm`}>🏆 {winner.label}</p>
                   </div>
                 </div>
               );
@@ -88,8 +88,8 @@ export function ClosingSummary({
               Seal {year}
             </button>
           ) : (
-            <div className="max-w-md rounded-xl border border-hairline bg-card/60 p-4 text-center">
-              <p className="text-sm text-ink">
+            <div className="max-w-md rounded-xl border border-gold bg-surface-1 p-4 text-center">
+              <p className="text-sm text-ink-warm">
                 Sealing locks every result for {year}. Changes afterward require a logged amendment. This is
                 permanent.
               </p>
@@ -99,7 +99,7 @@ export function ClosingSummary({
                   type="button"
                   onClick={() => setConfirming(false)}
                   disabled={sealing}
-                  className="rounded-full border border-hairline px-4 py-1.5 text-xs text-ink-muted hover:bg-hover"
+                  className="rounded-full border border-gold px-4 py-1.5 text-xs text-ink-warm-muted hover:bg-hover"
                 >
                   Cancel
                 </button>
@@ -116,7 +116,7 @@ export function ClosingSummary({
           )}
           <Link
             href="/weesels"
-            className="text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+            className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
           >
             ← The Weesels
           </Link>

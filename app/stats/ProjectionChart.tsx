@@ -82,7 +82,7 @@ export function ProjectionChart({
               fill="none"
               stroke="currentColor"
               strokeWidth={1}
-              className="text-ink-faint opacity-40"
+              className="text-ink-warm-faint opacity-40"
             />
           ))}
 
@@ -100,12 +100,12 @@ export function ProjectionChart({
             y2={padding.top + innerH}
             stroke="currentColor"
             strokeWidth={1}
-            className="text-ink-faint opacity-50"
+            className="text-ink-warm-faint opacity-50"
           />
         )}
       </svg>
 
-      <p className="mt-1 text-xs text-ink-faint">
+      <p className="mt-1 text-xs text-ink-warm-faint">
         {hoverEntries.length > 0
           ? hoverEntries
               .sort((a, b) => b.year - a.year)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { fraunces } from "./fonts";
 import { coverGradient } from "./coverPalette";
 
@@ -13,6 +13,7 @@ export function Cover({
   className = "aspect-[2/3] w-full",
   initialClassName = "text-4xl",
   roundedClassName = "rounded-md",
+  fillClassName = "",
 }: {
   id: number;
   title: string;
@@ -22,6 +23,12 @@ export function Cover({
   className?: string;
   initialClassName?: string;
   roundedClassName?: string;
+  // Letterboxing behind a cover whose real aspect ratio isn't exactly 2:3
+  // (object-contain leaves gaps on some side). Transparent by default, so
+  // whatever's behind the cover -- the card's own background -- shows
+  // through rather than a mismatched solid-color patch; pass an explicit
+  // color class here for the rare spot that wants one.
+  fillClassName?: string;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,7 +44,13 @@ export function Cover({
 
   const showImage = Boolean(coverUrl) && !imageFailed;
 
-  async function handleEditCover() {
+  async function handleEditCover(e: MouseEvent) {
+    // Cover can be wrapped in a Link (e.g. Library's card view links the
+    // whole cover to the book page) -- without this, clicking the pencil
+    // would both open the prompt below AND navigate away.
+    e.preventDefault();
+    e.stopPropagation();
+
     const input = window.prompt("Paste a cover image URL (leave blank to clear):", coverUrl ?? "");
     if (input === null) return; // cancelled
 
@@ -65,7 +78,7 @@ export function Cover({
     <div
       className={`group relative shrink-0 overflow-hidden ${roundedClassName} ${
         showImage
-          ? "bg-paper"
+          ? fillClassName
           : `flex items-center justify-center bg-gradient-to-br shadow-sm ring-1 ring-black/10 dark:ring-white/10 ${coverGradient(title)}`
       } ${className}`}
     >

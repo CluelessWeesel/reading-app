@@ -39,12 +39,12 @@ export function PublicationScatterSection({
 
   return (
     <SectionShell title="Publication years">
-      <div className="rounded-xl border border-hairline bg-card/40 p-4">
+      <div className="rounded-xl border border-gold bg-surface-1 p-4">
         {excludedNoteFor(data.excluded, "no publication year") && (
-          <p className="mb-2 text-xs text-ink-faint">{excludedNoteFor(data.excluded, "no publication year")}</p>
+          <p className="mb-2 text-xs text-ink-warm-faint">{excludedNoteFor(data.excluded, "no publication year")}</p>
         )}
         {data.points.length < 2 ? (
-          <p className="py-8 text-center text-sm text-ink-faint">Not enough books in scope yet.</p>
+          <p className="py-8 text-center text-sm text-ink-warm-faint">Not enough books in scope yet.</p>
         ) : (
           <PublicationScatter
             points={data.points}

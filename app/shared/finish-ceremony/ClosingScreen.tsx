@@ -7,9 +7,9 @@ import { ProgressDots } from "./ProgressDots";
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-hairline bg-card/50 py-4 text-center">
-      <p className="text-2xl font-semibold text-ink">{value}</p>
-      <p className="text-xs uppercase tracking-wide text-ink-faint">{label}</p>
+    <div className="rounded-xl border border-gold bg-surface-1 py-4 text-center">
+      <p className="text-2xl font-semibold text-ink-warm">{value}</p>
+      <p className="text-xs uppercase tracking-wide text-ink-warm-faint">{label}</p>
     </div>
   );
 }
@@ -19,6 +19,7 @@ export function ClosingScreen({
   ranking,
   yearTotals,
   yearRead,
+  addedToHolding,
   totalSteps,
   onDone,
 }: {
@@ -26,6 +27,7 @@ export function ClosingScreen({
   ranking: { rank: number; year: number } | null;
   yearTotals: { books: number; pages: number };
   yearRead: number;
+  addedToHolding: boolean;
   totalSteps: number;
   onDone: () => void;
 }) {
@@ -39,8 +41,8 @@ export function ClosingScreen({
       <div className="mb-6 w-full">
         <ProgressDots current={totalSteps - 1} total={totalSteps} />
       </div>
-      <p className={`${fraunces.className} mb-2 text-sm uppercase tracking-wide text-ink-faint`}>Finished</p>
-      <h2 className={`${fraunces.className} mb-8 text-3xl font-semibold text-ink`}>{book.title}</h2>
+      <p className={`${fraunces.className} mb-2 text-sm uppercase tracking-wide text-ink-warm-faint`}>Finished</p>
+      <h2 className={`${fraunces.className} mb-8 text-3xl font-semibold text-ink-warm`}>{book.title}</h2>
 
       <div className="mb-8 grid w-full grid-cols-2 gap-4">
         {ranking ? (
@@ -56,10 +58,13 @@ export function ClosingScreen({
         />
       </div>
 
-      <div className="mb-8 rounded-xl border border-hairline bg-card/50 px-6 py-4">
-        <p className="text-sm text-ink-faint">
+      <div className="mb-8 rounded-xl border border-gold bg-surface-1 px-6 py-4">
+        <p className="text-sm text-ink-warm-faint">
           {yearTotals.books} books · {yearTotals.pages.toLocaleString()} pages in {yearRead}
         </p>
+        {addedToHolding && (
+          <p className="mt-2 text-xs text-ink-warm-faint">Added to your tier board&apos;s holding row.</p>
+        )}
       </div>
 
       <button

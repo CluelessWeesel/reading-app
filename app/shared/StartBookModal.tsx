@@ -12,6 +12,7 @@ type TbrOption = {
   author: string | null;
   genre: string | null;
   word_count: number | null;
+  page_count: number | null;
 };
 
 const FORMAT_OPTIONS = [
@@ -43,7 +44,9 @@ export function StartBookModal({
   const [wordCount, setWordCount] = useState(
     initialTbrEntry?.word_count != null ? String(initialTbrEntry.word_count) : ""
   );
-  const [pageCount, setPageCount] = useState("");
+  const [pageCount, setPageCount] = useState(
+    initialTbrEntry?.page_count != null ? String(initialTbrEntry.page_count) : ""
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -74,6 +77,7 @@ export function StartBookModal({
   function selectTbr(entry: TbrOption) {
     setSelectedTbr(entry);
     setWordCount(entry.word_count != null ? String(entry.word_count) : "");
+    setPageCount(entry.page_count != null ? String(entry.page_count) : "");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -148,21 +152,21 @@ export function StartBookModal({
       role="presentation"
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-hairline bg-paper p-6 shadow-lg"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gold bg-surface-3 p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="start-book-title"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id="start-book-title" className={`${fraunces.className} text-xl font-semibold text-ink`}>
+          <h2 id="start-book-title" className={`${fraunces.className} text-xl font-semibold text-ink-warm`}>
             Start a book
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full px-2 py-1 text-ink-faint hover:bg-hover hover:text-ink"
+            className="rounded-full px-2 py-1 text-ink-warm-faint hover:bg-hover hover:text-ink-warm"
           >
             ✕
           </button>
@@ -170,12 +174,12 @@ export function StartBookModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!initialTbrEntry && (
-            <div className="flex gap-1 rounded-full border border-hairline bg-card/70 p-1 shadow-sm">
+            <div className="flex gap-1 rounded-full border border-gold bg-surface-1 p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setMode("tbr")}
                 className={`flex-1 rounded-full px-3 py-1 text-sm transition ${
-                  mode === "tbr" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                  mode === "tbr" ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
                 }`}
               >
                 From TBR
@@ -184,7 +188,7 @@ export function StartBookModal({
                 type="button"
                 onClick={() => setMode("new")}
                 className={`flex-1 rounded-full px-3 py-1 text-sm transition ${
-                  mode === "new" ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                  mode === "new" ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
                 }`}
               >
                 New title
@@ -196,16 +200,16 @@ export function StartBookModal({
             <div>
               <label className={modalLabelClass()}>TBR entry</label>
               {selectedTbr ? (
-                <div className="flex items-center justify-between rounded-lg border border-hairline bg-card/70 px-3 py-2 text-sm">
+                <div className="flex items-center justify-between rounded-lg border border-gold bg-surface-1 px-3 py-2 text-sm">
                   <div>
-                    <p className="font-medium text-ink">{selectedTbr.title}</p>
-                    {selectedTbr.author && <p className="text-xs text-ink-faint">{selectedTbr.author}</p>}
+                    <p className="font-medium text-ink-warm">{selectedTbr.title}</p>
+                    {selectedTbr.author && <p className="text-xs text-ink-warm-faint">{selectedTbr.author}</p>}
                   </div>
                   {!initialTbrEntry && (
                     <button
                       type="button"
                       onClick={() => setSelectedTbr(null)}
-                      className="text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                      className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                     >
                       Change
                     </button>
@@ -221,21 +225,21 @@ export function StartBookModal({
                     className={fieldClass()}
                     autoFocus
                   />
-                  <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-hairline">
+                  <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-gold">
                     {tbrOptions === null ? (
-                      <p className="p-3 text-sm text-ink-faint">Loading...</p>
+                      <p className="p-3 text-sm text-ink-warm-faint">Loading...</p>
                     ) : filteredTbr.length === 0 ? (
-                      <p className="p-3 text-sm text-ink-faint">No matches.</p>
+                      <p className="p-3 text-sm text-ink-warm-faint">No matches.</p>
                     ) : (
                       filteredTbr.slice(0, 30).map((entry) => (
                         <button
                           key={entry.id}
                           type="button"
                           onClick={() => selectTbr(entry)}
-                          className="block w-full border-b border-hairline px-3 py-2 text-left text-sm last:border-0 hover:bg-hover"
+                          className="block w-full border-b border-gold px-3 py-2 text-left text-sm last:border-0 hover:bg-hover"
                         >
-                          <span className="font-medium text-ink">{entry.title}</span>
-                          {entry.author && <span className="text-ink-faint"> — {entry.author}</span>}
+                          <span className="font-medium text-ink-warm">{entry.title}</span>
+                          {entry.author && <span className="text-ink-warm-faint"> — {entry.author}</span>}
                         </button>
                       ))
                     )}
@@ -314,7 +318,7 @@ export function StartBookModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-hairline px-4 py-1.5 text-sm text-ink-muted hover:text-ink"
+              className="rounded-full border border-gold px-4 py-1.5 text-sm text-ink-warm-muted hover:text-ink-warm"
             >
               Cancel
             </button>

@@ -1,6 +1,6 @@
 export function StarRating({ score }: { score: number | null }) {
   if (score == null) {
-    return <span className="text-xs text-ink-faint">Unrated</span>;
+    return <span className="text-xs text-ink-warm-faint">Unrated</span>;
   }
 
   const clamped = Math.max(0, Math.min(5, score));

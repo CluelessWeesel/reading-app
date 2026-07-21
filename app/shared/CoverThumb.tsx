@@ -8,16 +8,21 @@ export function CoverThumb({
   title,
   coverUrl,
   className = "aspect-[2/3] w-8",
+  fillClassName = "",
 }: {
   title: string;
   coverUrl: string | null;
   className?: string;
+  // Transparent by default (so a container with its own background --
+  // e.g. a Home altar panel's sampled cover color -- shows through);
+  // pass an explicit color class for a spot that wants a solid backing.
+  fillClassName?: string;
 }) {
   return (
     <div
       className={`relative shrink-0 overflow-hidden rounded ${
         coverUrl
-          ? "bg-paper"
+          ? fillClassName
           : `flex items-center justify-center bg-gradient-to-br shadow-sm ring-1 ring-black/10 dark:ring-white/10 ${coverGradient(title)}`
       } ${className}`}
     >

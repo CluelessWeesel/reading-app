@@ -7,7 +7,7 @@
 export function ChartTooltip({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
   return (
     <div
-      className="pointer-events-none absolute z-20 min-w-[9rem] max-w-[16rem] -translate-x-1/2 -translate-y-full rounded-lg border border-hairline bg-card px-2.5 py-2 text-xs text-ink shadow-lg"
+      className="pointer-events-none absolute z-20 min-w-[9rem] max-w-[16rem] -translate-x-1/2 -translate-y-full rounded-lg border border-gold bg-surface-1 px-2.5 py-2 text-xs text-ink-warm shadow-lg"
       style={{ left: x, top: y - 10 }}
     >
       {children}

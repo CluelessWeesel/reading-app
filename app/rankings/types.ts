@@ -20,6 +20,24 @@ export type UnrankedRow = {
 
 export type Movement = { old_rank: number | null; new_rank: number };
 
+export type AdjustmentEvent = {
+  kind: "rank" | "score";
+  book_id: number;
+  title: string;
+  old_val: number | null;
+  new_val: number | null;
+  reason: string;
+  changed_at: string;
+};
+
+export type AdjustmentWindowData = {
+  year: number;
+  isOpen: boolean;
+  usedCount: number;
+  limit: number;
+  events: AdjustmentEvent[];
+};
+
 export type YearData = {
   year: number;
   ranked: RankedRow[];

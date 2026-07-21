@@ -22,20 +22,20 @@ export function PagesPerDaySection({ books, scope }: { books: BookSummary[]; sco
 
   return (
     <SectionShell title="Avg pages/day per book">
-      <div className="rounded-xl border border-hairline bg-card/40 p-4">
+      <div className="rounded-xl border border-gold bg-surface-1 p-4">
         {excludedNoteFor(data.excluded, "no tracked pace") && (
-          <p className="mb-3 text-xs text-ink-faint">{excludedNoteFor(data.excluded, "no tracked pace")}</p>
+          <p className="mb-3 text-xs text-ink-warm-faint">{excludedNoteFor(data.excluded, "no tracked pace")}</p>
         )}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-warm-faint">
               Physical · {data.physical.length} books
             </p>
             <PagesPerDayLineChart points={data.physical} maxValue={data.maxValue} yGridlines={yGridlines} />
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-warm-faint">
               Audio · {data.audio.length} books
             </p>
             <PagesPerDayLineChart points={data.audio} maxValue={data.maxValue} yGridlines={yGridlines} />

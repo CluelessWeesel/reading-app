@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Manual toggle wins over prefers-color-scheme in both directions -- Tailwind's
+   dark: utilities normally only follow the OS setting, but the theme toggle
+   stamps data-theme on <html>, so dark: needs to key off that instead. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -20,6 +25,69 @@
      in both themes, so text sitting on top of it needs a fixed dark color
      rather than the ink token (which flips to a light color in dark mode). */
   --on-accent: #2b1c0e;
+
+  /* --- Weeselry texture theme (new, additive) ------------------------------
+     A second, parallel palette layered on top of the tokens above rather
+     than replacing them -- only the nav and /library reference these so
+     far, so every other page keeps its exact current look until each is
+     migrated deliberately. "warm" in a name below distinguishes these from
+     the older --ink/--paper/--card tokens above during this transition. */
+  --bg-texture: url("/textures/parchment-gold.png");
+  --bg-tint: rgba(255, 255, 255, 0.04);
+  --book-card-fill: url("/deco/frames/paper-card.png");
+
+  /* Translucent elevation surfaces -- parchment/night texture shows through
+     the gaps between and beneath these. 1 = resting, 2 = raised (e.g. a
+     dropdown), 3 = highest (modals). Base color sampled from the actual
+     texture's average (#e5cead) blended toward white, not an arbitrary
+     "warm white" -- a whiter tone read as floating/disconnected from the
+     parchment underneath it. */
+  --surface-1: rgba(245, 234, 215, 0.78);
+  --surface-2: rgba(245, 234, 215, 0.85);
+  --surface-3: rgba(245, 234, 215, 0.92);
+
+  /* Gold-tinted borders -- translucent, so the same rgba reads correctly
+     over both the light parchment and dark night texture without needing
+     separate per-theme values. */
+  --border-gold: rgba(184, 134, 42, 0.18);
+  --border-gold-strong: rgba(184, 134, 42, 0.25);
+
+  /* Solid gold, for decorative linework (corner flourishes, dividers) that
+     wants to actually read as a drawn gold line, not a translucent tint. */
+  --gold-ink: #b8862a;
+
+  /* Warm text palette -- never pure black/white. */
+  --ink-warm: #3a2a14;
+  --ink-warm-muted: #6b5a3e;
+  --ink-warm-faint: #8f7f63;
+
+  /* Warm-tinted card shadow, deepens on hover/lift. */
+  --shadow-card: 0 3px 12px rgba(58, 42, 20, 0.12);
+  --shadow-card-lift: 0 8px 24px rgba(58, 42, 20, 0.18);
+
+  /* Gold focus ring -- same value both themes, translucent enough to read
+     on any surface beneath it. */
+  --focus-ring: rgba(184, 134, 42, 0.7);
+
+  /* Accent palette -- identical names both themes, values tuned per theme
+     for contrast (dark-theme variants brightened further down). Each has a
+     soft "-chip" fill version (12% opacity) for pill/badge backgrounds. */
+  --accent-blue: #185fa5;
+  --accent-blue-chip: rgba(24, 95, 165, 0.12);
+  --accent-purple: #534ab7;
+  --accent-purple-chip: rgba(83, 74, 183, 0.12);
+  --accent-green: #1d9e75;
+  --accent-green-chip: rgba(29, 158, 117, 0.12);
+  --accent-teal: #0f6e56;
+  --accent-teal-chip: rgba(15, 110, 86, 0.12);
+  --accent-pink: #b0264e;
+  --accent-pink-chip: rgba(176, 38, 78, 0.12);
+  --accent-amber: #854f0b;
+  --accent-amber-chip: rgba(133, 79, 11, 0.12);
+  --accent-coral: #b04f13;
+  --accent-coral-chip: rgba(176, 79, 19, 0.12);
+  --accent-violet: #7623c1;
+  --accent-violet-chip: rgba(118, 35, 193, 0.12);
 }
 
 @theme inline {
@@ -38,6 +106,36 @@
   --color-accent: var(--accent);
   --color-star-empty: var(--star-empty);
   --color-on-accent: var(--on-accent);
+
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-gold: var(--border-gold);
+  --color-gold-strong: var(--border-gold-strong);
+  --color-gold-ink: var(--gold-ink);
+  --color-ink-warm: var(--ink-warm);
+  --color-ink-warm-muted: var(--ink-warm-muted);
+  --color-ink-warm-faint: var(--ink-warm-faint);
+
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-blue-chip: var(--accent-blue-chip);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-chip: var(--accent-purple-chip);
+  --color-accent-green: var(--accent-green);
+  --color-accent-green-chip: var(--accent-green-chip);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-teal-chip: var(--accent-teal-chip);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-pink-chip: var(--accent-pink-chip);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-amber-chip: var(--accent-amber-chip);
+  --color-accent-coral: var(--accent-coral);
+  --color-accent-coral-chip: var(--accent-coral-chip);
+  --color-accent-violet: var(--accent-violet);
+  --color-accent-violet-chip: var(--accent-violet-chip);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-card-lift: var(--shadow-card-lift);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,13 +152,415 @@
     --hover-tint: rgb(255 255 255 / 0.04);
     --accent: #fbbf24;
     --star-empty: #4a3f2f;
+
+    --bg-texture: url("/textures/night-gold.png");
+    --bg-tint: rgba(0, 0, 0, 0.15);
+    --book-card-fill: url("/deco/frames/paper-card.png");
+    --surface-1: rgba(24, 18, 14, 0.82);
+    --surface-2: rgba(24, 18, 14, 0.88);
+    --surface-3: rgba(24, 18, 14, 0.94);
+    --ink-warm: #f3e5ce;
+    --ink-warm-muted: #c9b996;
+    --ink-warm-faint: #a69874;
+    --shadow-card: 0 3px 12px rgba(0, 0, 0, 0.4);
+    --shadow-card-lift: 0 8px 24px rgba(0, 0, 0, 0.55);
+
+    /* ~20% brighter than the light-theme accents above, for contrast
+       against the dark surfaces. */
+    --accent-blue: #467fb7;
+    --accent-blue-chip: rgba(70, 127, 183, 0.12);
+    --accent-purple: #756ec5;
+    --accent-purple-chip: rgba(117, 110, 197, 0.12);
+    --accent-green: #4ab191;
+    --accent-green-chip: rgba(74, 177, 145, 0.12);
+    --accent-teal: #3f8b78;
+    --accent-teal-chip: rgba(63, 139, 120, 0.12);
+    --accent-pink: #c05171;
+    --accent-pink-chip: rgba(192, 81, 113, 0.12);
+    --accent-amber: #9d723c;
+    --accent-amber-chip: rgba(157, 114, 60, 0.12);
+    --accent-coral: #c07242;
+    --accent-coral-chip: rgba(192, 114, 66, 0.12);
+    --accent-violet: #914fcd;
+    --accent-violet-chip: rgba(145, 79, 205, 0.12);
   }
+}
+
+/* An explicit choice from the theme toggle always wins over the OS setting,
+   in both directions -- these repeat the light defaults and the dark values
+   above verbatim so forcing light on a dark-OS machine (or vice versa) is a
+   real override, not just "no-op back to whatever the media query says". */
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  --paper: #1c1512;
+  --card: #2a2119;
+  --ink: #f0e6d6;
+  --ink-muted: #b8a892;
+  --ink-faint: #8f7f68;
+  --hairline: #3a2f22;
+  --hover-tint: rgb(255 255 255 / 0.04);
+  --accent: #fbbf24;
+  --star-empty: #4a3f2f;
+
+  --bg-texture: url("/textures/night-gold.png");
+  --bg-tint: rgba(0, 0, 0, 0.15);
+  --book-card-fill: url("/deco/frames/paper-card.png");
+  --surface-1: rgba(24, 18, 14, 0.82);
+  --surface-2: rgba(24, 18, 14, 0.88);
+  --surface-3: rgba(24, 18, 14, 0.94);
+  --ink-warm: #f3e5ce;
+  --ink-warm-muted: #c9b996;
+  --ink-warm-faint: #a69874;
+  --shadow-card: 0 3px 12px rgba(0, 0, 0, 0.4);
+  --shadow-card-lift: 0 8px 24px rgba(0, 0, 0, 0.55);
+
+  --accent-blue: #467fb7;
+  --accent-blue-chip: rgba(70, 127, 183, 0.12);
+  --accent-purple: #756ec5;
+  --accent-purple-chip: rgba(117, 110, 197, 0.12);
+  --accent-green: #4ab191;
+  --accent-green-chip: rgba(74, 177, 145, 0.12);
+  --accent-teal: #3f8b78;
+  --accent-teal-chip: rgba(63, 139, 120, 0.12);
+  --accent-pink: #c05171;
+  --accent-pink-chip: rgba(192, 81, 113, 0.12);
+  --accent-amber: #9d723c;
+  --accent-amber-chip: rgba(157, 114, 60, 0.12);
+  --accent-coral: #c07242;
+  --accent-coral-chip: rgba(192, 114, 66, 0.12);
+  --accent-violet: #914fcd;
+  --accent-violet-chip: rgba(145, 79, 205, 0.12);
+}
+
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  --paper: #f7f1e3;
+  --card: #ffffff;
+  --ink: #2b2118;
+  --ink-muted: #6b5d4f;
+  --ink-faint: #8a7a63;
+  --hairline: #e2d6bf;
+  --hover-tint: rgb(0 0 0 / 0.03);
+  --accent: #f59e0b;
+  --star-empty: #ddd0b8;
+
+  --bg-texture: url("/textures/parchment-gold.png");
+  --bg-tint: rgba(255, 255, 255, 0.04);
+  --book-card-fill: url("/deco/frames/paper-card.png");
+  --surface-1: rgba(245, 234, 215, 0.78);
+  --surface-2: rgba(245, 234, 215, 0.85);
+  --surface-3: rgba(245, 234, 215, 0.92);
+  --ink-warm: #3a2a14;
+  --ink-warm-muted: #6b5a3e;
+  --ink-warm-faint: #8f7f63;
+  --shadow-card: 0 3px 12px rgba(58, 42, 20, 0.12);
+  --shadow-card-lift: 0 8px 24px rgba(58, 42, 20, 0.18);
+
+  --accent-blue: #185fa5;
+  --accent-blue-chip: rgba(24, 95, 165, 0.12);
+  --accent-purple: #534ab7;
+  --accent-purple-chip: rgba(83, 74, 183, 0.12);
+  --accent-green: #1d9e75;
+  --accent-green-chip: rgba(29, 158, 117, 0.12);
+  --accent-teal: #0f6e56;
+  --accent-teal-chip: rgba(15, 110, 86, 0.12);
+  --accent-pink: #b0264e;
+  --accent-pink-chip: rgba(176, 38, 78, 0.12);
+  --accent-amber: #854f0b;
+  --accent-amber-chip: rgba(133, 79, 11, 0.12);
+  --accent-coral: #b04f13;
+  --accent-coral-chip: rgba(176, 79, 19, 0.12);
+  --accent-violet: #7623c1;
+  --accent-violet-chip: rgba(118, 35, 193, 0.12);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Story card themes -- "parchment" and "night" are a property of the CARD
+   (recap = document/parchment, Wrapped = ceremonial/night), independent of
+   the viewer's own site-wide light/dark preference: you can view a night-
+   themed Wrapped card while browsing the rest of the site in light mode.
+   These are exact copies of the :root[data-theme] blocks above, scoped as
+   classes instead of an attribute selector, so nothing drifts between "the
+   site's light/dark look" and "a parchment/night story" over time. */
+.story-theme-parchment {
+  --bg-texture: url("/textures/parchment-gold.png");
+  --bg-tint: rgba(255, 255, 255, 0.04);
+  --surface-1: rgba(245, 234, 215, 0.78);
+  --surface-2: rgba(245, 234, 215, 0.85);
+  --surface-3: rgba(245, 234, 215, 0.92);
+  --border-gold: rgba(184, 134, 42, 0.18);
+  --border-gold-strong: rgba(184, 134, 42, 0.25);
+  --gold-ink: #b8862a;
+  --ink-warm: #3a2a14;
+  --ink-warm-muted: #6b5a3e;
+  --ink-warm-faint: #8f7f63;
+  --shadow-card: 0 3px 12px rgba(58, 42, 20, 0.12);
+  --shadow-card-lift: 0 8px 24px rgba(58, 42, 20, 0.18);
+  --accent-blue: #185fa5;
+  --accent-blue-chip: rgba(24, 95, 165, 0.12);
+  --accent-purple: #534ab7;
+  --accent-purple-chip: rgba(83, 74, 183, 0.12);
+  --accent-green: #1d9e75;
+  --accent-green-chip: rgba(29, 158, 117, 0.12);
+  --accent-teal: #0f6e56;
+  --accent-teal-chip: rgba(15, 110, 86, 0.12);
+  --accent-pink: #b0264e;
+  --accent-pink-chip: rgba(176, 38, 78, 0.12);
+  --accent-amber: #854f0b;
+  --accent-amber-chip: rgba(133, 79, 11, 0.12);
+  --accent-coral: #b04f13;
+  --accent-coral-chip: rgba(176, 79, 19, 0.12);
+  --accent-violet: #7623c1;
+  --accent-violet-chip: rgba(118, 35, 193, 0.12);
+}
+
+.story-theme-night {
+  --bg-texture: url("/textures/night-gold.png");
+  --bg-tint: rgba(0, 0, 0, 0.15);
+  --surface-1: rgba(24, 18, 14, 0.82);
+  --surface-2: rgba(24, 18, 14, 0.88);
+  --surface-3: rgba(24, 18, 14, 0.94);
+  --border-gold: rgba(184, 134, 42, 0.18);
+  --border-gold-strong: rgba(184, 134, 42, 0.25);
+  --gold-ink: #b8862a;
+  --ink-warm: #f3e5ce;
+  --ink-warm-muted: #c9b996;
+  --ink-warm-faint: #a69874;
+  --shadow-card: 0 3px 12px rgba(0, 0, 0, 0.4);
+  --shadow-card-lift: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --accent-blue: #467fb7;
+  --accent-blue-chip: rgba(70, 127, 183, 0.12);
+  --accent-purple: #756ec5;
+  --accent-purple-chip: rgba(117, 110, 197, 0.12);
+  --accent-green: #4ab191;
+  --accent-green-chip: rgba(74, 177, 145, 0.12);
+  --accent-teal: #3f8b78;
+  --accent-teal-chip: rgba(63, 139, 120, 0.12);
+  --accent-pink: #c05171;
+  --accent-pink-chip: rgba(192, 81, 113, 0.12);
+  --accent-amber: #9d723c;
+  --accent-amber-chip: rgba(157, 114, 60, 0.12);
+  --accent-coral: #c07242;
+  --accent-coral-chip: rgba(192, 114, 66, 0.12);
+  --accent-violet: #914fcd;
+  --accent-violet-chip: rgba(145, 79, 205, 0.12);
+}
+
+/* Same two-layer texture as .bg-texture, but for a bounded card element
+   rather than a full page wrapper -- `fixed` attachment ties the image to
+   the viewport, which looks wrong (texture "slides" relative to the card)
+   on anything smaller than the full page, so this omits it and lets the
+   background scroll with its own box instead. */
+.story-card-bg {
+  background-image: linear-gradient(var(--bg-tint), var(--bg-tint)), var(--bg-texture);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+/* Texture background -- deliberately separate from `body`'s plain
+   --background above (which every not-yet-migrated page's opaque wrapper
+   still paints over): only elements that opt into transparency (the nav,
+   /library's page wrapper) actually reveal this. Two-layer background:
+   the flat tint sits visually on top of the texture (first-listed layer
+   wins), keeping text contrast safe over the image's brighter glow spots.
+   `cover` was chosen over tiling -- at the common screen ratios this app
+   is actually used at, cover fills edge-to-edge with no seam and keeps
+   both images' corner glow accents mostly in frame; a busy all-over
+   texture like this tiles fine too if an ultra-wide view ever looks
+   awkward, but cover was the better default here. */
+.bg-texture {
+  background-image: linear-gradient(var(--bg-tint), var(--bg-tint)), var(--bg-texture);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-attachment: fixed, fixed;
+}
+@media (max-width: 767px) {
+  .bg-texture {
+    /* Fixed attachment janks on mobile scroll (repaint on every frame as
+       the URL bar shows/hides) -- scroll with the page there instead. */
+    background-attachment: scroll, scroll;
+  }
+}
+
+/* Elevated, textured-surface card -- translucent so .bg-texture shows
+   through the gaps, gold border, lifts and deepens its shadow on hover.
+   Two different transition speeds genuinely can't be expressed as
+   Tailwind utility classes on one element (a single transition-duration
+   utility would apply to every listed property), hence a plain class. */
+.surface-card {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-card);
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    transform 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+.surface-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-lift);
+}
+@media (prefers-reduced-motion: reduce) {
+  .surface-card {
+    transition: none;
+  }
+}
+
+/* Book cards specifically: the real illustrated gold-border card art
+   (public/deco/frames/paper-card.png, from design-inspo/better-ui/Book
+   card.jpg), instead of the flat surface-card border. The frame lives on
+   a ::before rather than directly on border-image, so dark mode can dim
+   just the illustration (via filter, below) without darkening the card's
+   actual content, which sits in normal flow on the element itself.
+   border-image ignores border-radius, so this is deliberately
+   square-cornered like the source frame rather than fighting it with
+   rounded-xl. */
+.frame-book-card {
+  position: relative;
+  padding: 20px;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out;
+}
+/* The whole illustrated card -- border AND interior -- is one JPG
+   (deco/frames/paper-card.png). Earlier versions used border-image, which
+   only ever draws sliced edge/corner strips and discards the rest of the
+   picture entirely -- the image's own middle was never being shown, which
+   is why making the interior "transparent" revealed the page behind it
+   instead of the picture. Rendering the full image here instead means
+   there's nothing separate to color-match: it's all one picture. Sits on
+   ::before (not directly on .frame-book-card) so real content -- cover,
+   title, text -- stays in normal flow above it and isn't touched by the
+   dark-mode filter below. */
+.frame-book-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 12px;
+  background-image: var(--book-card-fill);
+  background-size: 100% 105%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.frame-book-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-lift);
+}
+@media (prefers-reduced-motion: reduce) {
+  .frame-book-card {
+    transition: none;
+  }
+}
+/* The card art is a fixed light-parchment illustration that doesn't
+   itself respond to theme -- without this it reads as a bright cutout
+   pasted onto the dark UI. Same override precedence as every other
+   themed value: OS preference, then an explicit toggle choice wins over
+   it in either direction. */
+@media (prefers-color-scheme: dark) {
+  .frame-book-card::before {
+    filter: brightness(0.18) saturate(0.55);
+  }
+}
+:root[data-theme="dark"] .frame-book-card::before {
+  filter: brightness(0.18) saturate(0.55);
+}
+:root[data-theme="light"] .frame-book-card::before {
+  filter: none;
+}
+
+/* Same translucent surface/border/shadow, no lift/hover -- for static
+   panels that aren't themselves a clickable card (a toggle group, a
+   sticky filter bar). */
+.surface-flat {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-gold);
+  box-shadow: var(--shadow-card);
+  transition: background-color 300ms ease, border-color 300ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .surface-flat {
+    transition: none;
+  }
+}
+
+/* Magazine-style illuminated drop cap -- one per text block, never a
+   heading/label/button. Sized off font-size so it scales with its
+   surrounding paragraph rather than a fixed pixel value. */
+.drop-cap {
+  float: left;
+  width: 2.6em;
+  height: 2.6em;
+  margin: 0.05em 0.35em 0.1em 0;
+  object-fit: contain;
+}
+
+/* Section header label -- real small-caps (not just uppercase), letter-spaced. */
+.section-label {
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+}
+
+/* Loading spinner (public/deco/loading.png, from design-inspo/better-ui/
+   Loading.png) -- spins, holds, spins again rather than turning forever.
+   Ends each spin at 360deg rather than looping back to 0deg -- a full
+   turn looks visually identical to no turn at all, so the restart is
+   invisible instead of snapping backward. */
+@keyframes loading-spin-pause {
+  0% {
+    transform: rotate(0deg);
+  }
+  55% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+/* Deliberately NOT disabled under prefers-reduced-motion -- unlike the
+   decorative hover/fade motion elsewhere in this file, this is the only
+   signal that the app is actually doing something, so it's exempt rather
+   than left with no feedback at all. */
+.loading-spinner {
+  animation: loading-spin-pause 2.2s ease-in-out infinite;
+}
+
+/* Theme-switch fade for the page chrome itself. Scoped to body/html rather
+   than a blanket `*` selector so it doesn't fight the app's existing
+   per-component hover/press transitions (which already animate at their
+   own, faster speeds). */
+@media (prefers-reduced-motion: no-preference) {
+  html,
+  body {
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+}
+
+/* Interaction tokens used app-wide from now on. */
+a:hover {
+  text-decoration: underline;
+}
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* Weesels reveal stage -- restrained confetti burst, a dropping crown, and

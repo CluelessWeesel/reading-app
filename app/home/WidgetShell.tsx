@@ -18,13 +18,13 @@ export function WidgetShell({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-hairline bg-card/40 p-4">
+    <section className="rounded-xl border border-gold bg-surface-1 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className={`${fraunces.className} text-lg font-semibold text-ink`}>{title}</h2>
+        <h2 className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>{title}</h2>
         {href && (
           <Link
             href={href}
-            className="shrink-0 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+            className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
           >
             {hrefLabel}
           </Link>

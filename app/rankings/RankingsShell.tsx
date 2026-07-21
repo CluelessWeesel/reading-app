@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fraunces } from "../shared/fonts";
 import { RankingsView } from "./RankingsView";
 import { SeriesRankingsView } from "./SeriesRankingsView";
 import { SERIES_LIST_NAMES } from "./types";
 import type { HonourItem } from "../shared/HonourBadge";
-import type { SeriesRankedRow, StatusFlag, YearData } from "./types";
+import type { AdjustmentWindowData, SeriesRankedRow, StatusFlag, YearData } from "./types";
 
 type Tab = "books" | "series";
 
@@ -17,10 +18,10 @@ const TABS: { key: Tab; label: string }[] = [
 
 function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-hairline bg-card/70 px-3 py-2.5">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">{label}</p>
-      <p className={`${fraunces.className} text-lg font-semibold text-ink`}>{value}</p>
-      {sub && <p className="text-xs text-ink-faint">{sub}</p>}
+    <div className="rounded-lg border border-gold bg-surface-1 px-3 py-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">{label}</p>
+      <p className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>{value}</p>
+      {sub && <p className="text-xs text-ink-warm-faint">{sub}</p>}
     </div>
   );
 }
@@ -44,6 +45,8 @@ export function RankingsShell({
   seriesData,
   mainSeriesData,
   subSeriesData,
+  adjustmentWindow,
+  holdingCount,
 }: {
   bookData: Record<number, YearData>;
   years: number[];
@@ -53,6 +56,8 @@ export function RankingsShell({
   seriesData: SeriesRankedRow[];
   mainSeriesData: SeriesRankedRow[];
   subSeriesData: SeriesRankedRow[];
+  adjustmentWindow: AdjustmentWindowData;
+  holdingCount: number;
 }) {
   const [tab, setTab] = useState<Tab>("books");
 
@@ -61,28 +66,42 @@ export function RankingsShell({
   const percentComplete = total > 0 ? Math.round((statusCounts.Complete / total) * 100) : 0;
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className={`mx-auto ${tab === "series" ? "max-w-6xl" : "max-w-3xl"}`}>
         <header className="mb-6">
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>Rankings</h1>
+          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>Rankings</h1>
         </header>
 
-        <div className="mb-6 flex gap-2 overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              aria-pressed={tab === t.key}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                tab === t.key
-                  ? "bg-accent text-on-accent"
-                  : "border border-hairline bg-card/70 text-ink-muted hover:bg-hover"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="mb-6 flex items-center justify-between gap-2 overflow-x-auto">
+          <div className="flex gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                aria-pressed={tab === t.key}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  tab === t.key
+                    ? "bg-accent text-on-accent"
+                    : "border border-gold bg-surface-1 text-ink-warm-muted hover:bg-hover"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <Link
+            href="/rankings/tiers"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-gold bg-surface-1 px-4 py-1.5 text-sm font-medium text-ink-warm-muted transition hover:bg-hover"
+          >
+            Tier Board
+            {holdingCount > 0 && (
+              <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-on-accent">
+                {holdingCount}
+              </span>
+            )}
+          </Link>
         </div>
 
         {tab === "books" && (
@@ -92,6 +111,7 @@ export function RankingsShell({
             defaultYear={defaultYear}
             bookHonours={bookHonours}
             sealedYears={sealedYears}
+            adjustmentWindow={adjustmentWindow}
           />
         )}
 
@@ -106,15 +126,15 @@ export function RankingsShell({
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <h3 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink`}>Series</h3>
+                <h3 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink-warm`}>Series</h3>
                 <SeriesRankingsView listName={SERIES_LIST_NAMES[0]} initialRows={seriesData} />
               </div>
               <div>
-                <h3 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink`}>Main Series</h3>
+                <h3 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink-warm`}>Main Series</h3>
                 <SeriesRankingsView listName={SERIES_LIST_NAMES[1]} initialRows={mainSeriesData} />
               </div>
               <div>
-                <h3 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink`}>Sub Series</h3>
+                <h3 className={`${fraunces.className} mb-2 text-sm font-semibold text-ink-warm`}>Sub Series</h3>
                 <SeriesRankingsView listName={SERIES_LIST_NAMES[2]} initialRows={subSeriesData} />
               </div>
             </div>

@@ -259,12 +259,12 @@ export function BookTable({
   return (
     <div>
       <details className="group/cols mb-3 inline-block">
-        <summary className="cursor-pointer list-none rounded-full border border-hairline bg-card/70 px-3 py-1.5 text-sm text-ink shadow-sm">
+        <summary className="cursor-pointer list-none rounded-full border border-gold bg-surface-1 px-3 py-1.5 text-sm text-ink-warm shadow-sm">
           Columns ({visibleColumns.size}/{ALL_COLUMN_KEYS.length})
         </summary>
-        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 rounded-xl border border-hairline bg-card p-3 shadow-md sm:grid-cols-3 md:grid-cols-4">
+        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 rounded-xl border border-gold bg-surface-1 p-3 shadow-md sm:grid-cols-3 md:grid-cols-4">
           {COLUMNS.map((col) => (
-            <label key={col.key} className="flex items-center gap-2 text-sm text-ink">
+            <label key={col.key} className="flex items-center gap-2 text-sm text-ink-warm">
               <input
                 type="checkbox"
                 checked={visibleColumns.has(col.key)}
@@ -277,10 +277,10 @@ export function BookTable({
         </div>
       </details>
 
-      <div className="overflow-x-auto rounded-xl border border-hairline">
+      <div className="overflow-x-auto rounded-xl border border-gold bg-surface-1">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-hairline bg-card/70">
+            <tr className="border-b border-gold bg-surface-1">
               <th scope="col" className="px-2 py-1.5">
                 <span className="sr-only">Cover</span>
               </th>
@@ -293,14 +293,14 @@ export function BookTable({
                   <th
                     key={col.key}
                     scope="col"
-                    className={`whitespace-nowrap px-2 py-1.5 font-medium text-ink-muted ${
+                    className={`whitespace-nowrap px-2 py-1.5 font-medium text-ink-warm-muted ${
                       col.align === "right" ? "text-right" : "text-left"
                     }`}
                   >
                     <button
                       type="button"
                       onClick={() => handleHeaderClick(col.key)}
-                      className={`inline-flex items-center gap-1 transition hover:text-ink ${active ? "text-ink" : ""}`}
+                      className={`inline-flex items-center gap-1 transition hover:text-ink-warm ${active ? "text-ink-warm" : ""}`}
                     >
                       {col.label}
                       {active && <span aria-hidden>{sort!.direction === "asc" ? "▲" : "▼"}</span>}
@@ -312,7 +312,7 @@ export function BookTable({
           </thead>
           <tbody>
             {rows.map((book) => (
-              <tr key={book.book_id} className="border-b border-hairline last:border-0 hover:bg-hover">
+              <tr key={book.book_id} className="border-b border-gold last:border-0 hover:bg-hover">
                 <td className="px-2 py-1.5">
                   <Cover
                     id={book.book_id}
@@ -328,7 +328,7 @@ export function BookTable({
                   <button
                     type="button"
                     onClick={() => onEditRequest(book.book_id)}
-                    className="whitespace-nowrap text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+                    className="whitespace-nowrap text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
                   >
                     Edit
                   </button>
@@ -339,7 +339,7 @@ export function BookTable({
                     <td
                       key={col.key}
                       title={col.maxWidthClass ? value : undefined}
-                      className={`px-2 py-1.5 text-ink ${
+                      className={`px-2 py-1.5 text-ink-warm ${
                         col.maxWidthClass ? `${col.maxWidthClass} truncate` : "whitespace-nowrap"
                       } ${col.align === "right" ? "text-right tabular-nums" : "text-left"} ${
                         sort?.key === col.key ? "bg-accent/10 font-medium" : ""

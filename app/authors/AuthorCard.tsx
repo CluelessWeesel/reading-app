@@ -15,7 +15,7 @@ export function AuthorCard({ author }: { author: AuthorSummary }) {
   return (
     <Link
       href={`/authors/${author.id}`}
-      className="group flex min-w-0 flex-col items-center gap-2 rounded-xl p-3 text-center transition hover:-translate-y-0.5 hover:bg-hover"
+      className="surface-card group flex min-w-0 flex-col items-center gap-2 rounded-xl p-3 text-center"
     >
       <AuthorPhoto name={author.name} photoUrl={author.photo_url} className="aspect-square w-20 sm:w-24" initialClassName="text-2xl" />
       {/* Fixed-height text block, same trick as BookCard -- keeps every
@@ -25,9 +25,9 @@ export function AuthorCard({ author }: { author: AuthorSummary }) {
           would overflow past the card into its neighbour instead of
           wrapping/clipping within it. */}
       <div className="flex h-12 w-full min-w-0 flex-col items-center justify-start gap-0.5">
-        <p className={`${fraunces.className} line-clamp-2 w-full text-sm font-semibold leading-snug text-ink`}>{author.name}</p>
+        <p className={`${fraunces.className} line-clamp-2 w-full text-sm font-semibold leading-snug text-ink-warm`}>{author.name}</p>
       </div>
-      <p className="w-full min-w-0 truncate text-xs text-ink-faint">{vitals}</p>
+      <p className="w-full min-w-0 truncate text-xs text-ink-warm-faint">{vitals}</p>
     </Link>
   );
 }

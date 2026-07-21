@@ -1,4 +1,4 @@
-export type BookMetadata = { genres: string[]; series: string[] };
+export type BookMetadata = { genres: string[]; series: string[]; subgenres: string[] };
 
 async function attempt(): Promise<BookMetadata> {
   const res = await fetch("/api/book-metadata");
@@ -7,6 +7,7 @@ async function attempt(): Promise<BookMetadata> {
   return {
     genres: Array.isArray(data.genres) ? data.genres : [],
     series: Array.isArray(data.series) ? data.series : [],
+    subgenres: Array.isArray(data.subgenres) ? data.subgenres : [],
   };
 }
 

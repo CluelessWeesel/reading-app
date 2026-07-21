@@ -28,7 +28,7 @@ export function Bookshelf({ books, rankings }: { books: AuthorBook[]; rankings: 
           onClick={() => setOrder("reading")}
           aria-pressed={order === "reading"}
           className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-            order === "reading" ? "bg-accent text-on-accent" : "border border-hairline text-ink-muted hover:bg-hover"
+            order === "reading" ? "bg-accent text-on-accent" : "border border-gold text-ink-warm-muted hover:bg-hover"
           }`}
         >
           Reading order
@@ -38,7 +38,7 @@ export function Bookshelf({ books, rankings }: { books: AuthorBook[]; rankings: 
           onClick={() => setOrder("publication")}
           aria-pressed={order === "publication"}
           className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-            order === "publication" ? "bg-accent text-on-accent" : "border border-hairline text-ink-muted hover:bg-hover"
+            order === "publication" ? "bg-accent text-on-accent" : "border border-gold text-ink-warm-muted hover:bg-hover"
           }`}
         >
           Publication order
@@ -62,7 +62,7 @@ export function Bookshelf({ books, rankings }: { books: AuthorBook[]; rankings: 
                   </span>
                 )}
               </div>
-              <p className="truncate text-xs text-ink group-hover:underline">{book.title}</p>
+              <p className="truncate text-xs text-ink-warm group-hover:underline">{book.title}</p>
               <StarRating score={book.score} />
             </Link>
           );

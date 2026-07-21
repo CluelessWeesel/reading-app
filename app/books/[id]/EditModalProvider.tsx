@@ -29,11 +29,13 @@ export function EditModalProvider({
   book,
   allGenres,
   seriesOptions,
+  subgenreOptions,
   children,
 }: {
   book: Book;
   allGenres: string[];
   seriesOptions: string[];
+  subgenreOptions: string[];
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -49,6 +51,7 @@ export function EditModalProvider({
             book={book}
             allGenres={allGenres}
             seriesOptions={seriesOptions}
+            subgenreOptions={subgenreOptions}
             onClose={() => setEditing(false)}
             onSaved={() => {
               setEditing(false);

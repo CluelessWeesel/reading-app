@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { todayLocalIso } from "@/app/shared/isoDate";
+import { classifyYearEdit } from "@/app/shared/adjustmentWindow";
+import { ADJUSTMENT_LIMIT, getAdjustmentUsedBookIds } from "@/app/shared/adjustmentBudget";
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
@@ -10,12 +13,20 @@ function isFiniteNumber(v: unknown): v is number {
 // title/score/had_star for a brand-new placement), this only ever touches a
 // row that already exists -- so those fields are read back from the row
 // being moved rather than trusted from the request body.
+//
+// Every reorder is classified against today's date (see
+// app/shared/adjustmentWindow.ts): "current" (the year still being read)
+// proceeds exactly as before; "adjustment" (the just-ended year, inside
+// its Dec25-Jan31 window) requires a reason and is capped at 5 distinct
+// books; "historical" (any other already-finalized year) requires an
+// explicit historicalConfirmed flag -- a real server-side gate, not just a
+// client-side nicety, so a stray call can't silently drift old data.
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const { year, book_id, rank } = body as Record<string, unknown>;
+  const { year, book_id, rank, reason, historicalConfirmed } = body as Record<string, unknown>;
 
   if (!isFiniteNumber(year) || !Number.isInteger(year)) {
     return NextResponse.json({ error: "year must be a whole number." }, { status: 400 });
@@ -27,9 +38,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "rank must be a positive whole number." }, { status: 400 });
   }
 
+  const classification = classifyYearEdit(year, todayLocalIso());
+  const reasonVal = typeof reason === "string" ? reason.trim() : "";
+  if (classification === "adjustment" && !reasonVal) {
+    return NextResponse.json({ error: "A short reason is required for an adjustment-window change." }, { status: 400 });
+  }
+  if (classification === "historical" && historicalConfirmed !== true) {
+    return NextResponse.json(
+      {
+        error: `${year} is outside its adjustment window. Confirm to edit it anyway.`,
+        requiresConfirmation: true,
+      },
+      { status: 409 }
+    );
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
+    if (classification === "adjustment") {
+      const used = await getAdjustmentUsedBookIds(client, year);
+      if (!used.has(book_id) && used.size >= ADJUSTMENT_LIMIT) {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { error: `You've already used all ${ADJUSTMENT_LIMIT} adjustments for ${year}.` },
+          { status: 403 }
+        );
+      }
+    }
 
     const { rows: listRows } = await client.query(
       `select distinct list_id from book_rankings where year = $1 limit 1`,
@@ -71,8 +108,8 @@ export async function POST(request: NextRequest) {
 
     if (oldRank !== rank) {
       await client.query(
-        `insert into rank_changes (book_id, year, old_rank, new_rank) values ($1, $2, $3, $4)`,
-        [book_id, year, oldRank, rank]
+        `insert into rank_changes (book_id, year, old_rank, new_rank, reason) values ($1, $2, $3, $4, $5)`,
+        [book_id, year, oldRank, rank, classification === "adjustment" ? reasonVal : null]
       );
     }
 

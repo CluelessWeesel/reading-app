@@ -141,8 +141,8 @@ export function PublicationScatter({
             <CoverThumb title={hover.point.title} coverUrl={hover.point.coverUrl} />
             <div className="min-w-0">
               <p className="truncate font-semibold">{hover.point.title}</p>
-              {hover.point.author && <p className="truncate text-ink-faint">{hover.point.author}</p>}
-              <p className="text-ink-faint">Published {hover.point.yTrue}</p>
+              {hover.point.author && <p className="truncate text-ink-warm-faint">{hover.point.author}</p>}
+              <p className="text-ink-warm-faint">Published {hover.point.yTrue}</p>
             </div>
           </div>
         </ChartTooltip>

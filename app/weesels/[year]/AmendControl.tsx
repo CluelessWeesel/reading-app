@@ -68,7 +68,7 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+        className="mt-2 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
       >
         Amend this year
       </button>
@@ -76,20 +76,20 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-hairline bg-card/40 p-4">
-      <p className="mb-3 text-sm font-medium text-ink">Amend {year}</p>
+    <div className="mt-4 rounded-xl border border-gold bg-surface-1 p-4">
+      <p className="mb-3 text-sm font-medium text-ink-warm">Amend {year}</p>
       {done ? (
         <p className="text-sm text-emerald-700 dark:text-emerald-400">Amendment applied.</p>
       ) : (
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">
               Category
             </label>
             <select
               value={categoryId}
               onChange={(e) => selectCategory(e.target.value === "" ? "" : Number(e.target.value))}
-              className="w-full rounded-lg border border-hairline bg-card/70 px-2.5 py-1.5 text-sm text-ink"
+              className="w-full rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
             >
               <option value="">Choose a category...</option>
               {ranBlocks.map((b) => (
@@ -106,7 +106,7 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
               onClick={() => setAction("change-winner")}
               aria-pressed={action === "change-winner"}
               className={`rounded-full border px-3 py-1 text-xs ${
-                action === "change-winner" ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint"
+                action === "change-winner" ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint"
               }`}
             >
               Change winner
@@ -116,7 +116,7 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
               onClick={() => setAction("edit-citation")}
               aria-pressed={action === "edit-citation"}
               className={`rounded-full border px-3 py-1 text-xs ${
-                action === "edit-citation" ? "border-accent bg-accent/10 text-ink" : "border-hairline text-ink-faint"
+                action === "edit-citation" ? "border-accent bg-accent/10 text-ink-warm" : "border-gold text-ink-warm-faint"
               }`}
             >
               Edit citation
@@ -125,13 +125,13 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
 
           {selectedBlock && action === "change-winner" && (
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">
                 New winner
               </label>
               <select
                 value={newWinnerId}
                 onChange={(e) => setNewWinnerId(Number(e.target.value))}
-                className="w-full rounded-lg border border-hairline bg-card/70 px-2.5 py-1.5 text-sm text-ink"
+                className="w-full rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
               >
                 <option value="">Choose a nominee...</option>
                 {[selectedBlock.winner, ...selectedBlock.nominees]
@@ -147,20 +147,20 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
 
           {selectedBlock && action === "edit-citation" && (
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">
                 New citation
               </label>
               <textarea
                 value={newCitation}
                 onChange={(e) => setNewCitation(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-hairline bg-card/70 px-3 py-2 text-sm text-ink"
+                className="w-full rounded-lg border border-gold bg-surface-1 px-3 py-2 text-sm text-ink-warm"
               />
             </div>
           )}
 
           <div>
-            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">
               Reason (required)
             </label>
             <textarea
@@ -168,7 +168,7 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
               onChange={(e) => setReason(e.target.value)}
               rows={2}
               placeholder="Why is this being amended?"
-              className="w-full rounded-lg border border-hairline bg-card/70 px-3 py-2 text-sm text-ink"
+              className="w-full rounded-lg border border-gold bg-surface-1 px-3 py-2 text-sm text-ink-warm"
             />
           </div>
 
@@ -186,7 +186,7 @@ export function AmendControl({ year, blocks }: { year: number; blocks: YearCateg
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-full border border-hairline px-4 py-1.5 text-xs text-ink-muted hover:bg-hover"
+              className="rounded-full border border-gold px-4 py-1.5 text-xs text-ink-warm-muted hover:bg-hover"
             >
               Cancel
             </button>

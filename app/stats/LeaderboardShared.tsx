@@ -8,7 +8,7 @@ import type { LeaderboardEntry } from "./leaderboardMath";
 
 export function pillClass(active: boolean): string {
   return `rounded-full px-3 py-1 text-xs font-medium transition ${
-    active ? "bg-accent text-on-accent" : "border border-hairline text-ink-muted hover:bg-hover"
+    active ? "bg-accent text-on-accent" : "border border-gold text-ink-warm-muted hover:bg-hover"
   }`;
 }
 
@@ -16,9 +16,9 @@ export function pillClass(active: boolean): string {
 // component so the calling card just resolves a name -> id lookup and
 // doesn't need to know how the link itself is rendered).
 export function AuthorName({ name, authorId }: { name: string; authorId?: number | null }) {
-  if (authorId == null) return <span className="truncate text-ink">{name}</span>;
+  if (authorId == null) return <span className="truncate text-ink-warm">{name}</span>;
   return (
-    <Link href={`/authors/${authorId}`} className="truncate text-ink hover:underline">
+    <Link href={`/authors/${authorId}`} className="truncate text-ink-warm hover:underline">
       {name}
     </Link>
   );
@@ -39,14 +39,14 @@ export function RankedList({
   const [expanded, setExpanded] = useState(false);
 
   if (entries.length === 0) {
-    return <p className="py-6 text-center text-sm text-ink-faint">No data for this metric in scope.</p>;
+    return <p className="py-6 text-center text-sm text-ink-warm-faint">No data for this metric in scope.</p>;
   }
 
   const shown = expanded ? entries : entries.slice(0, PAGE_SIZE);
 
   return (
     <div>
-      <ul className="divide-y divide-hairline">
+      <ul className="divide-y divide-gold">
         {shown.map((e, i) => {
           const { background, color } = rankColor(i + 1, entries.length);
           return (
@@ -63,8 +63,8 @@ export function RankedList({
               <div className="min-w-0 flex-1">
                 <div className="truncate">{renderName ? renderName(e) : e.name}</div>
                 <div className="truncate text-xs">
-                  <span className="text-ink">{e.primaryLabel}</span>{" "}
-                  <span className="text-ink-faint">· {e.secondaryLabel}</span>
+                  <span className="text-ink-warm">{e.primaryLabel}</span>{" "}
+                  <span className="text-ink-warm-faint">· {e.secondaryLabel}</span>
                 </div>
               </div>
             </li>
@@ -75,7 +75,7 @@ export function RankedList({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+          className="mt-2 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
         >
           {expanded ? "Show top 10" : `Show all ${entries.length}`}
         </button>

@@ -19,7 +19,7 @@ export function AuthorPhoto({
     <div
       className={`relative shrink-0 overflow-hidden rounded-full ${
         photoUrl
-          ? "bg-paper"
+          ? ""
           : `flex items-center justify-center bg-gradient-to-br shadow-sm ring-1 ring-black/10 dark:ring-white/10 ${coverGradient(name)}`
       } ${className}`}
     >

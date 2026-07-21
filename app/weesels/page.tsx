@@ -38,16 +38,16 @@ export default async function WeeselsPage() {
   const currentYearInSeason = YEARS.includes(currentYear) && !sealedYears.has(currentYear);
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-4xl">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>The Weesels</h1>
-            <p className="mt-1 text-sm text-ink-faint">The annual reading awards, archived.</p>
+            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>The Weesels</h1>
+            <p className="mt-1 text-sm text-ink-warm-faint">The annual reading awards, archived.</p>
           </div>
           <Link
             href="/weesels/leaderboard"
-            className="rounded-full border border-hairline bg-card/70 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-hover hover:text-ink"
+            className="rounded-full border border-gold bg-surface-1 px-4 py-2 text-sm font-medium text-ink-warm-muted transition hover:bg-hover hover:text-ink-warm"
           >
             Author wins leaderboard &rarr;
           </Link>

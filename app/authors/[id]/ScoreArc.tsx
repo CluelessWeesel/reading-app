@@ -33,7 +33,7 @@ export function ScoreArc({ points }: { points: ScoreArcPoint[] }) {
           {[5, 4, 3, 2, 1, 0].map((score) => (
             <span
               key={score}
-              className="absolute left-0 -translate-y-1/2 text-[9px] leading-none text-ink-faint"
+              className="absolute left-0 -translate-y-1/2 text-[9px] leading-none text-ink-warm-faint"
               style={{ top: `${(y(score) / height) * 100}%` }}
             >
               {score}
@@ -86,10 +86,10 @@ export function ScoreArc({ points }: { points: ScoreArcPoint[] }) {
         </div>
       </div>
 
-      <p className="mt-1.5 h-4 truncate text-xs text-ink-faint">
+      <p className="mt-1.5 h-4 truncate text-xs text-ink-warm-faint">
         {hovered ? (
           <>
-            <span className="text-ink">{hovered.title}</span>: {hovered.score.toFixed(1)}
+            <span className="text-ink-warm">{hovered.title}</span>: {hovered.score.toFixed(1)}
           </>
         ) : (
           "Hover a point for details"

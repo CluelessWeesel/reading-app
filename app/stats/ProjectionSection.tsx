@@ -40,11 +40,11 @@ export function ProjectionSection({
 
   return (
     <SectionShell title="Projection">
-      <div className="rounded-xl border border-hairline bg-card/40 p-4">
-        <p className={`${fraunces.className} text-lg font-semibold text-ink`}>{headline}</p>
+      <div className="rounded-xl border border-gold bg-surface-1 p-4">
+        <p className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>{headline}</p>
         <div className="mt-3">
           {series.every((s) => s.points.length === 0) ? (
-            <p className="py-8 text-center text-sm text-ink-faint">Not enough books in scope yet.</p>
+            <p className="py-8 text-center text-sm text-ink-warm-faint">Not enough books in scope yet.</p>
           ) : (
             <ProjectionChart series={series} domainMaxX={domainMaxX} domainMaxY={domainMaxY} />
           )}

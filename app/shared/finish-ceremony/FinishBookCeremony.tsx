@@ -20,6 +20,7 @@ const TOTAL_STEPS = CONTENT_STEPS.length + 1;
 type ClosingData = {
   yearRead: number;
   yearTotals: { books: number; pages: number };
+  addedToHolding: boolean;
 };
 
 export function FinishBookCeremony({
@@ -45,7 +46,7 @@ export function FinishBookCeremony({
   async function handleFinish() {
     const res = await fetch(`/api/finish-book/${book.book_id}`, { method: "POST" });
     const data = await res.json();
-    setClosingData({ yearRead: data.year_read, yearTotals: data.year_totals });
+    setClosingData({ yearRead: data.year_read, yearTotals: data.year_totals, addedToHolding: data.added_to_holding });
     setStep("closing");
     const finishedBook: Book = {
       ...book,
@@ -65,13 +66,13 @@ export function FinishBookCeremony({
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto bg-black/40 sm:items-center sm:p-4">
-      <div className="relative flex min-h-full w-full max-w-2xl flex-col overflow-hidden bg-paper shadow-lg sm:max-h-[85vh] sm:min-h-0 sm:rounded-xl">
+      <div className="relative flex min-h-full w-full max-w-2xl flex-col overflow-hidden bg-surface-3 shadow-lg sm:max-h-[85vh] sm:min-h-0 sm:rounded-xl">
         {step !== "closing" && (
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-3 top-3 z-10 rounded-full px-2 py-1 text-ink-faint hover:bg-hover hover:text-ink"
+            className="absolute right-3 top-3 z-10 rounded-full px-2 py-1 text-ink-warm-faint hover:bg-hover hover:text-ink-warm"
           >
             ✕
           </button>
@@ -164,6 +165,7 @@ export function FinishBookCeremony({
             ranking={ranking}
             yearTotals={closingData.yearTotals}
             yearRead={closingData.yearRead}
+            addedToHolding={closingData.addedToHolding}
             totalSteps={TOTAL_STEPS}
             onDone={handleDone}
           />

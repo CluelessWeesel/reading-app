@@ -52,6 +52,16 @@ export function creditedAuthorId(row: WeeselRow, categoryName: string): number |
   return row.author_or_narrator_author_id ?? null;
 }
 
+// Best Narration is the one category credited to a narrator, not an
+// author -- this resolves their real id via the narrators table (see
+// getWeeselRows), so their wins can link to their own /narrators page
+// instead of an author-table name collision (or nothing at all). Null for
+// every other category.
+export function creditedNarratorId(row: WeeselRow, categoryName: string): number | null {
+  if (categoryName !== "Best Narration") return null;
+  return row.author_or_narrator_narrator_id ?? null;
+}
+
 export function categoryNameOf(row: WeeselRow, categoriesById: Map<number, WeeselCategory>): string {
   return (row.category_id != null ? categoriesById.get(row.category_id)?.name : undefined) ?? "";
 }
@@ -70,19 +80,20 @@ export function computeBookCrowns(rows: WeeselRow[]): CrownEntry[] {
 }
 
 export function computeAuthorCrowns(rows: WeeselRow[], categoriesById: Map<number, WeeselCategory>): CrownEntry[] {
-  const byAuthor = new Map<string, { count: number; authorId?: number }>();
+  const byAuthor = new Map<string, { count: number; authorId?: number; narratorId?: number }>();
   for (const r of rows) {
     if (r.result !== "winner") continue;
     const categoryName = categoryNameOf(r, categoriesById);
     const name = creditedAuthorName(r, categoryName);
     if (!name) continue;
     const authorId = creditedAuthorId(r, categoryName) ?? undefined;
+    const narratorId = creditedNarratorId(r, categoryName) ?? undefined;
     const existing = byAuthor.get(name);
     if (existing) existing.count++;
-    else byAuthor.set(name, { count: 1, authorId });
+    else byAuthor.set(name, { count: 1, authorId, narratorId });
   }
   return Array.from(byAuthor.entries())
-    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId }))
+    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId, narratorId: v.narratorId }))
     .sort((a, b) => b.count - a.count);
 }
 
@@ -93,18 +104,19 @@ export function computeAuthorNominations(
   rows: WeeselRow[],
   categoriesById: Map<number, WeeselCategory>
 ): CrownEntry[] {
-  const byAuthor = new Map<string, { count: number; authorId?: number }>();
+  const byAuthor = new Map<string, { count: number; authorId?: number; narratorId?: number }>();
   for (const r of rows) {
     const categoryName = categoryNameOf(r, categoriesById);
     const name = creditedAuthorName(r, categoryName);
     if (!name) continue;
     const authorId = creditedAuthorId(r, categoryName) ?? undefined;
+    const narratorId = creditedNarratorId(r, categoryName) ?? undefined;
     const existing = byAuthor.get(name);
     if (existing) existing.count++;
-    else byAuthor.set(name, { count: 1, authorId });
+    else byAuthor.set(name, { count: 1, authorId, narratorId });
   }
   return Array.from(byAuthor.entries())
-    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId }))
+    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId, narratorId: v.narratorId }))
     .sort((a, b) => b.count - a.count);
 }
 
@@ -116,7 +128,7 @@ export function computeMostNominatedWithoutWin(
   categoriesById: Map<number, WeeselCategory>
 ): { books: CrownEntry[]; authors: CrownEntry[] } {
   const bookNoms = new Map<number, { label: string; count: number; wins: number }>();
-  const authorNoms = new Map<string, { count: number; wins: number; authorId?: number }>();
+  const authorNoms = new Map<string, { count: number; wins: number; authorId?: number; narratorId?: number }>();
 
   for (const r of rows) {
     const categoryName = categoryNameOf(r, categoriesById);
@@ -135,12 +147,13 @@ export function computeMostNominatedWithoutWin(
     const authorName = creditedAuthorName(r, categoryName);
     if (authorName) {
       const authorId = creditedAuthorId(r, categoryName) ?? undefined;
+      const narratorId = creditedNarratorId(r, categoryName) ?? undefined;
       const existing = authorNoms.get(authorName);
       if (existing) {
         existing.count++;
         if (isWin) existing.wins++;
       } else {
-        authorNoms.set(authorName, { count: 1, wins: isWin ? 1 : 0, authorId });
+        authorNoms.set(authorName, { count: 1, wins: isWin ? 1 : 0, authorId, narratorId });
       }
     }
   }
@@ -152,7 +165,7 @@ export function computeMostNominatedWithoutWin(
 
   const authors = Array.from(authorNoms.entries())
     .filter(([, v]) => v.wins === 0)
-    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId }))
+    .map(([name, v]) => ({ label: name, count: v.count, authorId: v.authorId, narratorId: v.narratorId }))
     .sort((a, b) => b.count - a.count);
 
   return { books, authors };
@@ -180,6 +193,7 @@ export function computeDynasties(rows: WeeselRow[], categories: WeeselCategory[]
             label: isBookCategory(categoryName) ? displayTitle(r) : r.nominee,
             bookId: r.book_id ?? undefined,
             authorId: creditedAuthorId(r, categoryName) ?? undefined,
+            narratorId: creditedNarratorId(r, categoryName) ?? undefined,
           };
         });
       return { category: c.name, winners };

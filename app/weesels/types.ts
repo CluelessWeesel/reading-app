@@ -26,13 +26,19 @@ export type WeeselRow = {
   // weeselMath.ts's creditedAuthorId.
   nominee_author_id: number | null;
   author_or_narrator_author_id: number | null;
+  // Best Narration's real crediting -- author_or_narrator holds the
+  // narrator's name for that category, and this resolves it against the
+  // narrators table (not authors) so their wins link to their own page
+  // instead of staying unlinked or accidentally matching an author of the
+  // same name. See weeselMath.ts's creditedNarratorId.
+  author_or_narrator_narrator_id: number | null;
 };
 
-export type CrownEntry = { label: string; count: number; bookId?: number; authorId?: number };
+export type CrownEntry = { label: string; count: number; bookId?: number; authorId?: number; narratorId?: number };
 
 export type DynastyEntry = {
   category: string;
-  winners: { year: number; label: string; bookId?: number; authorId?: number }[];
+  winners: { year: number; label: string; bookId?: number; authorId?: number; narratorId?: number }[];
 };
 
 export type CrownsPerYear = { year: number; count: number };

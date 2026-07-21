@@ -14,11 +14,15 @@
     "backfill:avg-pace": "tsx scripts/backfill-avg-pace.ts",
     "migrate:rambler-reviews": "tsx scripts/migrate-rambler-reviews.ts",
     "backfill:authors": "tsx scripts/backfill-authors.ts",
+    "backfill:narrators": "tsx scripts/backfill-narrators.ts",
     "backfill:weesels": "tsx scripts/backfill-weesels.ts",
-    "backfill:tbr-date-added": "tsx scripts/backfill-tbr-date-added.ts"
+    "backfill:tbr-date-added": "tsx scripts/backfill-tbr-date-added.ts",
+    "backfill:recaps": "tsx scripts/backfill-recaps.ts",
+    "backfill:wrapped": "tsx scripts/backfill-wrapped.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
+    "html-to-image": "^1.11.13",
     "next": "16.2.10",
     "pg": "^8.22.0",
     "react": "19.2.4",

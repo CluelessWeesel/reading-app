@@ -18,7 +18,7 @@ export function DailyPagesChart({ days }: { days: { date: string; pages: number 
           </div>
         ))}
       </div>
-      <div className="mt-1 flex justify-between text-[10px] text-ink-faint">
+      <div className="mt-1 flex justify-between text-[10px] text-ink-warm-faint">
         <span>{days[0].date}</span>
         {days.length > 1 && <span>{days[days.length - 1].date}</span>}
       </div>

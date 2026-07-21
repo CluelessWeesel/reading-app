@@ -65,7 +65,7 @@ export function PaceHeroChart({
           fill="none"
           stroke="currentColor"
           strokeWidth={1}
-          className="text-ink-faint opacity-40"
+          className="text-ink-warm-faint opacity-40"
         />
       ))}
 
@@ -76,7 +76,7 @@ export function PaceHeroChart({
           stroke="currentColor"
           strokeWidth={1.5}
           strokeDasharray="6 4"
-          className="text-ink-faint"
+          className="text-ink-warm-faint"
         />
       )}
       {projectionPoints && (

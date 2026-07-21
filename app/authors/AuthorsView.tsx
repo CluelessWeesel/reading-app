@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fraunces } from "../shared/fonts";
 import { labelClass, selectClass } from "../shared/formControls";
@@ -45,7 +46,7 @@ function compareAuthors(a: AuthorSummary, b: AuthorSummary, key: SortKey): numbe
 
 function pillClass(active: boolean): string {
   return `rounded-full px-3 py-1 text-xs font-medium transition ${
-    active ? "bg-accent text-on-accent" : "border border-hairline text-ink-muted hover:bg-hover"
+    active ? "bg-accent text-on-accent" : "border border-gold text-ink-warm-muted hover:bg-hover"
   }`;
 }
 
@@ -75,16 +76,24 @@ export function AuthorsView({ authors }: { authors: AuthorSummary[] }) {
   }, [authors, search, sortKey, minBooksOn, queuedOnly, ratedOnly, genreFilter]);
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-6">
-          <h1 className={`${fraunces.className} text-3xl font-semibold text-ink sm:text-4xl`}>Authors</h1>
-          <p className="mt-1 text-sm text-ink-faint">
-            Showing {filteredSorted.length} of {authors.length} authors
-          </p>
+        <header className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>Authors</h1>
+            <p className="mt-1 text-sm text-ink-warm-faint">
+              Showing {filteredSorted.length} of {authors.length} authors
+            </p>
+          </div>
+          <Link
+            href="/narrators"
+            className="mt-1 shrink-0 text-sm text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+          >
+            Narrators →
+          </Link>
         </header>
 
-        <div className="sticky top-0 z-10 -mx-4 mb-8 border-b border-hairline bg-paper/90 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+        <div className="surface-flat sticky top-0 z-10 -mx-4 mb-8 rounded-none px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-xl">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1">
               <label className={labelClass()} htmlFor="author-search">
@@ -167,7 +176,7 @@ export function AuthorsView({ authors }: { authors: AuthorSummary[] }) {
         </div>
 
         {filteredSorted.length === 0 ? (
-          <p className="py-16 text-center text-sm text-ink-faint">No authors match this search.</p>
+          <p className="py-16 text-center text-sm text-ink-warm-faint">No authors match this search.</p>
         ) : (
           <div className="grid grid-cols-3 gap-x-2 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
             {filteredSorted.map((author) => (

@@ -57,11 +57,41 @@ export async function POST(
       [yearRead]
     );
 
+    // Tier board: once the opening fill has placed every pre-existing book,
+    // every fresh finish drops straight into Holding -- before that, this
+    // book instead just joins the fill's own unfilled-books queue. Gated on
+    // the server's own setting, same reasoning as /api/tier-board/place.
+    const { rows: fillRows } = await client.query(
+      `select value from app_settings where key = 'tier_fill_completed'`
+    );
+    let addedToHolding = false;
+    if (fillRows[0]?.value === "true") {
+      const { rows: holdingRows } = await client.query(
+        `select coalesce(max(position), -1) + 1 as next_position from book_tiers where tier = 'holding'`
+      );
+      // on conflict do nothing guards a book that somehow already has a
+      // tier row (a re-finish, say) -- only log/report the drop if the
+      // insert actually happened, so a no-op doesn't get double-counted.
+      const { rowCount } = await client.query(
+        `insert into book_tiers (book_id, tier, position) values ($1, 'holding', $2)
+         on conflict (book_id) do nothing`,
+        [bookIdNum, holdingRows[0].next_position]
+      );
+      if (rowCount) {
+        await client.query(
+          `insert into tier_moves (book_id, from_tier, to_tier) values ($1, null, 'holding')`,
+          [bookIdNum]
+        );
+        addedToHolding = true;
+      }
+    }
+
     await client.query("COMMIT");
     return NextResponse.json({
       year_read: yearRead,
       date_finished: dateFinished,
       year_totals: totalRows[0],
+      added_to_holding: addedToHolding,
     });
   } catch (err) {
     await client.query("ROLLBACK");

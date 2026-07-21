@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { pool } from "@/lib/db";
 import { fraunces } from "@/app/shared/fonts";
 import { daysBetweenInclusive } from "@/app/shared/isoDate";
@@ -17,6 +18,7 @@ import { DailyPagesChart } from "./DailyPagesChart";
 import { rankColor } from "./rankColor";
 import { EditModalProvider } from "./EditModalProvider";
 import { ReviewTrigger } from "./ReviewTrigger";
+import { DropCapText } from "@/app/shared/DropCap";
 
 export const dynamic = "force-dynamic";
 
@@ -106,21 +108,91 @@ async function getBookHonours(bookId: number): Promise<HonourItem[]> {
   return rows;
 }
 
-async function getEditMetadata(): Promise<{ allGenres: string[]; seriesOptions: string[] }> {
-  const [genres, series] = await Promise.all([
+type AdjustmentHistoryEvent = {
+  kind: "rank" | "score";
+  old_val: number | null;
+  new_val: number | null;
+  reason: string;
+  changed_at: string;
+};
+
+// Only ever the sanctioned end-of-year adjustment events (reason is not
+// null) -- a plain, unremarkable rank/score edit outside the window
+// doesn't show up here at all. See app/rankings/adjustmentWindow.ts.
+async function getAdjustmentHistory(bookId: number): Promise<AdjustmentHistoryEvent[]> {
+  const { rows } = await pool.query<AdjustmentHistoryEvent>(
+    `select 'rank' as kind, rc.old_rank::numeric as old_val, rc.new_rank::numeric as new_val,
+            rc.reason, to_char(rc.changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as changed_at
+     from rank_changes rc
+     where rc.book_id = $1 and rc.reason is not null
+     union all
+     select 'score' as kind, sc.old_score as old_val, sc.new_score as new_val,
+            sc.reason, to_char(sc.changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as changed_at
+     from score_changes sc
+     where sc.book_id = $1 and sc.reason is not null
+     order by changed_at desc`,
+    [bookId]
+  );
+  return rows;
+}
+
+type TierHistoryEvent = { from_tier: string | null; to_tier: string; moved_at: string; note: string | null };
+
+// currentTier is null for a book that hasn't entered the tier board yet
+// (still being read, or -- during the opening fill -- simply not reached
+// yet). history is empty for every book placed during that fill, by
+// design (see /api/tier-board/place): only moves after the fill was
+// completed ever get logged.
+async function getTierInfo(bookId: number): Promise<{ currentTier: string | null; history: TierHistoryEvent[] }> {
+  const [tierRes, movesRes] = await Promise.all([
+    pool.query<{ tier: string }>(`select tier from book_tiers where book_id = $1`, [bookId]),
+    pool.query<TierHistoryEvent>(
+      `select from_tier, to_tier, to_char(moved_at, 'YYYY-MM-DD') as moved_at, note
+       from tier_moves where book_id = $1 order by moved_at desc`,
+      [bookId]
+    ),
+  ]);
+  return { currentTier: tierRes.rows[0]?.tier ?? null, history: movesRes.rows };
+}
+
+async function getBookNarrators(bookId: number): Promise<{ id: number; name: string }[]> {
+  const { rows } = await pool.query<{ id: number; name: string }>(
+    `select n.id::int as id, n.name
+     from book_narrators bn
+     join narrators n on n.id = bn.narrator_id
+     where bn.book_id = $1
+     order by n.name asc`,
+    [bookId]
+  );
+  return rows;
+}
+
+async function getEditMetadata(): Promise<{ allGenres: string[]; seriesOptions: string[]; subgenreOptions: string[] }> {
+  const [genres, series, subgenres] = await Promise.all([
     pool.query<{ genre: string }>(`select genre from genres order by genre asc`),
     pool.query<{ series: string }>(
       `select distinct series from books where series is not null order by series asc`
     ),
+    pool.query<{ subgenre: string }>(
+      `select distinct subgenre from (
+         select subgenre from books where subgenre is not null
+         union
+         select subgenre from tbr where subgenre is not null
+       ) s order by subgenre asc`
+    ),
   ]);
-  return { allGenres: genres.rows.map((r) => r.genre), seriesOptions: series.rows.map((r) => r.series) };
+  return {
+    allGenres: genres.rows.map((r) => r.genre),
+    seriesOptions: series.rows.map((r) => r.series),
+    subgenreOptions: subgenres.rows.map((r) => r.subgenre),
+  };
 }
 
-function FieldRow({ label, value }: { label: string; value: string }) {
+function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-hairline py-2 text-sm last:border-0">
-      <span className="text-ink-faint">{label}</span>
-      <span className="text-right text-ink">{value}</span>
+    <div className="flex items-baseline justify-between gap-4 border-b border-gold py-2 text-sm last:border-0">
+      <span className="text-ink-warm-faint">{label}</span>
+      <span className="text-right text-ink-warm">{value}</span>
     </div>
   );
 }
@@ -133,7 +205,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   const book = await getBook(bookId);
   if (!book) notFound();
 
-  const [rankingInfo, ratings, promptAnswers, { allGenres, seriesOptions }, dailyReading, modelPrediction, honours] =
+  const [rankingInfo, ratings, promptAnswers, { allGenres, seriesOptions, subgenreOptions }, dailyReading, modelPrediction, honours, adjustmentHistory, bookNarrators, tierInfo] =
     await Promise.all([
       getRankingInfo(bookId),
       getRatings(bookId),
@@ -142,6 +214,9 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
       getDailyReading(bookId),
       computePredictedScore(book),
       getBookHonours(bookId),
+      getAdjustmentHistory(bookId),
+      getBookNarrators(bookId),
+      getTierInfo(bookId),
     ]);
 
   const { stats: derivedStats, paceChart } = await computeDerivedStats(
@@ -150,9 +225,28 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   );
 
   const genreValue = book.genre ? (book.subgenre ? `${book.genre} (${book.subgenre})` : book.genre) : null;
-  const formatValue = book.format_raw
+  // Narrator names link to /narrators/id when resolved (via book_narrators
+  // -- a duet/cast joins with ", "); falls back to the raw books.narrator
+  // text for anything unresolved (e.g. "Full Cast", which deliberately has
+  // no narrator row).
+  const narratorNode: ReactNode =
+    bookNarrators.length > 0 ? (
+      <>
+        {bookNarrators.map((n, i) => (
+          <span key={n.id}>
+            {i > 0 && ", "}
+            <Link href={`/narrators/${n.id}`} className="underline decoration-dotted underline-offset-2 hover:text-ink-warm">
+              {n.name}
+            </Link>
+          </span>
+        ))}
+      </>
+    ) : (
+      book.narrator
+    );
+  const formatValue: ReactNode = book.format_raw
     ? book.format_type === "audio" && book.narrator
-      ? `${book.format_raw} · narrated by ${book.narrator}`
+      ? <>{book.format_raw} · narrated by {narratorNode}</>
       : book.format_raw
     : book.format_type
       ? FORMAT_LABELS[book.format_type] ?? book.format_type
@@ -180,12 +274,12 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <EditModalProvider book={book} allGenres={allGenres} seriesOptions={seriesOptions}>
-      <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <EditModalProvider book={book} allGenres={allGenres} seriesOptions={seriesOptions} subgenreOptions={subgenreOptions}>
+      <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto max-w-4xl space-y-10">
           <Link
             href="/library"
-            className="text-sm text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+            className="text-sm text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
           >
             ← Library
           </Link>
@@ -193,11 +287,11 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
           <BookHeader book={book} rankingInfo={rankingInfo} modelPrediction={modelPrediction} honours={honours} />
 
           <div className="grid gap-6 sm:grid-cols-2">
-            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink`}>Details</h2>
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink-warm`}>Details</h2>
               <div>
                 <FieldRow label="Genre" value={dash(genreValue)} />
-                <FieldRow label="Format" value={dash(formatValue)} />
+                <FieldRow label="Format" value={formatValue ?? "—"} />
                 <FieldRow label="Words / Pages" value={dash(wordsPages)} />
                 <FieldRow label="Words / Page" value={dash(wordsPerPage)} />
                 <FieldRow label="Dates" value={dash(datesValue)} />
@@ -205,19 +299,19 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 <FieldRow label="Reread" value={book.reread ? "Yes" : "No"} />
               </div>
             </div>
-            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink`}>Ratings</h2>
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink-warm`}>Ratings</h2>
               {ratings.length > 0 && <RadarChart categories={ratings} />}
               <RatingBars ratings={ratings} />
             </div>
           </div>
 
           {(derivedStats.length > 0 || paceChart.length > 0 || dailyReading.length > 0) && (
-            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-              <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink`}>Stats</h2>
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink-warm`}>Stats</h2>
               {dailyReading.length > 0 && (
                 <div className="mb-4">
-                  <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-faint">
+                  <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-warm-faint">
                     Pages read per day
                   </p>
                   <DailyPagesChart days={dailyReading} />
@@ -231,9 +325,9 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
               {derivedStats.length > 0 && (
                 <div className="flex flex-wrap gap-3">
                   {derivedStats.map((s) => (
-                    <div key={s.label} className="rounded-lg border border-hairline bg-card/70 px-3 py-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">{s.label}</p>
-                      <p className="text-sm text-ink">{s.value}</p>
+                    <div key={s.label} className="rounded-lg border border-gold bg-surface-1 px-3 py-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">{s.label}</p>
+                      <p className="text-sm text-ink-warm">{s.value}</p>
                     </div>
                   ))}
                 </div>
@@ -242,21 +336,24 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
           )}
 
           {book.status !== "reading" && (
-            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
               <div className="mb-2 flex items-center justify-between gap-4">
-                <h2 className={`${fraunces.className} text-lg font-semibold text-ink`}>Review</h2>
+                <h2 className={`${fraunces.className} text-lg font-semibold text-ink-warm`}>Review</h2>
                 {book.review && (
-                  <ReviewTrigger className="text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink">
+                  <ReviewTrigger className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm">
                     Edit
                   </ReviewTrigger>
                 )}
               </div>
               {book.review ? (
-                <p className="whitespace-pre-wrap text-ink">{book.review}</p>
+                <DropCapText
+                  text={book.review}
+                  className={`${fraunces.className} whitespace-pre-wrap text-lg italic leading-relaxed text-ink-warm`}
+                />
               ) : (
-                <p className="text-sm text-ink-faint">
+                <p className="text-sm text-ink-warm-faint">
                   No review yet.{" "}
-                  <ReviewTrigger className="underline decoration-dotted underline-offset-4 hover:text-ink">
+                  <ReviewTrigger className="underline decoration-dotted underline-offset-4 hover:text-ink-warm">
                     Add one
                   </ReviewTrigger>
                 </p>
@@ -265,22 +362,75 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
           )}
 
           {book.legacy_notes && (
-            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink`}>From the archive</h2>
-              <p className="whitespace-pre-wrap text-sm text-ink-faint">{book.legacy_notes}</p>
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink-warm`}>From the archive</h2>
+              <p className="whitespace-pre-wrap text-sm text-ink-warm-faint">{book.legacy_notes}</p>
             </div>
           )}
 
-          <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-            <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink`}>Card prompts</h2>
+          {adjustmentHistory.length > 0 && (
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink-warm`}>Adjustment history</h2>
+              <ul className="divide-y divide-gold">
+                {adjustmentHistory.map((e, i) => {
+                  const [datePart, timePart] = e.changed_at.split("T");
+                  const fmt = (v: number | null) =>
+                    v == null ? "unranked" : e.kind === "rank" ? `#${v}` : v.toFixed(1);
+                  return (
+                    <li key={`${e.kind}-${e.changed_at}-${i}`} className="py-2 text-sm">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                        <span className="font-medium text-ink-warm">
+                          {e.kind === "rank" ? "Rank" : "Score"}: {fmt(e.old_val)} → {fmt(e.new_val)}
+                        </span>
+                        <span className="text-xs text-ink-warm-faint">
+                          {datePart} {timePart?.slice(0, 5) ?? ""}
+                        </span>
+                      </div>
+                      <p className="text-xs italic text-ink-warm-faint">{e.reason}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {(tierInfo.currentTier || tierInfo.history.length > 0) && (
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink-warm`}>Tier history</h2>
+              {tierInfo.currentTier && (
+                <p className="mb-3 text-sm text-ink-warm">
+                  Currently in{" "}
+                  <span className="font-semibold">
+                    {tierInfo.currentTier === "holding" ? "Holding" : tierInfo.currentTier}
+                  </span>
+                </p>
+              )}
+              {tierInfo.history.length > 0 && (
+                <ul className="divide-y divide-gold">
+                  {tierInfo.history.map((e, i) => (
+                    <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-sm">
+                      <span className="text-ink-warm">
+                        {e.from_tier == null ? "Entered" : e.from_tier === "holding" ? "Holding" : e.from_tier} →{" "}
+                        <span className="font-medium">{e.to_tier === "holding" ? "Holding" : e.to_tier}</span>
+                      </span>
+                      <span className="text-xs text-ink-warm-faint">{e.moved_at}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+            <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink-warm`}>Card prompts</h2>
             {promptAnswers.length === 0 ? (
-              <p className="text-sm text-ink-faint">No prompts answered for this book.</p>
+              <p className="text-sm text-ink-warm-faint">No prompts answered for this book.</p>
             ) : (
               <div className="space-y-4">
                 {promptAnswers.map((pa) => (
                   <div key={pa.id}>
-                    <p className="text-sm text-ink-faint">{pa.question}</p>
-                    <p className="mt-1 text-ink">{pa.answer}</p>
+                    <p className="text-sm text-ink-warm-faint">{pa.question}</p>
+                    <p className="mt-1 text-ink-warm">{pa.answer}</p>
                   </div>
                 ))}
               </div>

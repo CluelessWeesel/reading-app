@@ -45,11 +45,11 @@ export function LogView({
   }
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-lg">
-        <h1 className={`${fraunces.className} mb-4 text-3xl font-semibold text-ink`}>Log</h1>
+        <h1 className={`${fraunces.className} mb-4 text-3xl font-semibold text-ink-warm`}>Log</h1>
 
-        <div className="mb-6 flex gap-1 rounded-full border border-hairline bg-card/70 p-1 shadow-sm">
+        <div className="mb-6 flex gap-1 rounded-full border border-gold bg-surface-1 p-1 shadow-sm">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -57,7 +57,7 @@ export function LogView({
               onClick={() => setTab(t.key)}
               aria-pressed={tab === t.key}
               className={`flex-1 rounded-full py-2 text-sm transition ${
-                tab === t.key ? "bg-accent text-on-accent" : "text-ink-muted hover:text-ink"
+                tab === t.key ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
               }`}
             >
               {t.label}

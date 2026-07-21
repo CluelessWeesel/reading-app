@@ -198,9 +198,9 @@ export default async function AuthorDetailPage({ params }: { params: Promise<{ i
   if (books.length === 0) notFound();
 
   return (
-    <div className="min-h-full flex-1 bg-paper px-4 py-8 sm:px-8 sm:py-12">
+    <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-4xl space-y-8">
-        <Link href="/authors" className="text-sm text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink">
+        <Link href="/authors" className="text-sm text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm">
           ← Authors
         </Link>
 
@@ -223,7 +223,7 @@ export default async function AuthorDetailPage({ params }: { params: Promise<{ i
         />
 
         <div>
-          <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink`}>Bookshelf</h2>
+          <h2 className={`${fraunces.className} mb-3 text-lg font-semibold text-ink-warm`}>Bookshelf</h2>
           <Bookshelf books={books} rankings={rankings} />
         </div>
 
@@ -232,13 +232,13 @@ export default async function AuthorDetailPage({ params }: { params: Promise<{ i
         {books.length >= 3 && (
           <div className="grid gap-6 sm:grid-cols-2">
             {scoreArc.length >= 3 && (
-              <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-                <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink`}>Score arc</h2>
+              <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+                <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink-warm`}>Score arc</h2>
                 <ScoreArc points={scoreArc} />
               </div>
             )}
-            <div className="rounded-2xl border border-hairline bg-card/40 p-5">
-              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink`}>Reading timeline</h2>
+            <div className="rounded-2xl border border-gold bg-surface-1 p-5">
+              <h2 className={`${fraunces.className} mb-2 text-lg font-semibold text-ink-warm`}>Reading timeline</h2>
               <ReadingTimeline points={timeline} />
             </div>
           </div>

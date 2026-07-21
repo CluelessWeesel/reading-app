@@ -44,9 +44,9 @@ function BirthdayReadCard({
   const description = "Whatever book was in progress on your birthday. Set the date once below (no year needed).";
 
   return (
-    <div className="rounded-lg border border-hairline bg-card/70 px-3 py-2.5">
+    <div className="rounded-lg border border-gold bg-surface-1 px-3 py-2.5">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">The Birthday Read</p>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">The Birthday Read</p>
         <InfoTooltip text={description} />
       </div>
       {!birthdayMMDD ? (
@@ -57,7 +57,7 @@ function BirthdayReadCard({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="MM-DD"
-              className="w-16 rounded border border-hairline bg-card px-1.5 py-0.5 text-xs text-ink outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-16 rounded border border-gold bg-surface-1 px-1.5 py-0.5 text-xs text-ink-warm outline-none focus:ring-2 focus:ring-accent/40"
             />
             <button type="button" onClick={handleSave} disabled={saving} className="text-xs text-accent underline decoration-dotted underline-offset-4 disabled:opacity-50">
               {saving ? "Saving..." : "Save"}
@@ -67,22 +67,22 @@ function BirthdayReadCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="mt-1 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+            className="mt-1 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
           >
             Set your birthday
           </button>
         )
       ) : result.ok ? (
         <>
-          <p className={`${fraunces.className} truncate text-sm font-semibold text-ink`}>
+          <p className={`${fraunces.className} truncate text-sm font-semibold text-ink-warm`}>
             <a href={result.holderHref} className="hover:underline">
               {result.holder}
             </a>
           </p>
-          <p className="truncate text-xs text-ink-faint">{result.value}</p>
+          <p className="truncate text-xs text-ink-warm-faint">{result.value}</p>
         </>
       ) : (
-        <p className="mt-1 text-xs text-ink-faint">Not enough data yet.</p>
+        <p className="mt-1 text-xs text-ink-warm-faint">Not enough data yet.</p>
       )}
     </div>
   );
@@ -186,7 +186,7 @@ export function RecordsSection({
         <div key={group.title} className="mb-6 last:mb-0">
           <div className="mb-2 flex items-center gap-1.5">
             <span aria-hidden>{group.emoji}</span>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-faint">{group.title}</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-warm-faint">{group.title}</h3>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {group.title === "Time" ? (

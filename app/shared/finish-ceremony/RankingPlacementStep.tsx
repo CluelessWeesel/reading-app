@@ -92,7 +92,7 @@ export function RankingPlacementStep({
   if (rankings === null) {
     return (
       <CeremonyStepShell title="Ranking placement" stepIndex={stepIndex} totalSteps={totalSteps} onNext={handleSkip} onSkip={handleSkip} onBack={onBack}>
-        <p className="text-sm text-ink-faint">Loading...</p>
+        <p className="text-sm text-ink-warm-faint">Loading...</p>
       </CeremonyStepShell>
     );
   }
@@ -104,9 +104,9 @@ export function RankingPlacementStep({
   }
 
   const NewBookRow = (
-    <div className="flex items-center gap-2 border-b border-hairline bg-accent/10 px-3 py-2 text-sm last:border-0">
-      <span className="w-6 text-right font-semibold text-ink">{newBookRank}</span>
-      <span className="font-medium text-ink">{book.title} (new)</span>
+    <div className="flex items-center gap-2 border-b border-gold bg-accent/10 px-3 py-2 text-sm last:border-0">
+      <span className="w-6 text-right font-semibold text-ink-warm">{newBookRank}</span>
+      <span className="font-medium text-ink-warm">{book.title} (new)</span>
     </div>
   );
 
@@ -122,19 +122,19 @@ export function RankingPlacementStep({
       nextDisabled={saving}
     >
       <div className="space-y-4">
-        <p className="text-sm text-ink-faint">Tap where it lands among your {year} reads.</p>
+        <p className="text-sm text-ink-warm-faint">Tap where it lands among your {year} reads.</p>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-        <div className="max-h-96 overflow-y-auto rounded-lg border border-hairline">
+        <div className="max-h-96 overflow-y-auto rounded-lg border border-gold">
           {rankings.length === 0 ? (
-            <p className="p-3 text-sm text-ink-faint">First book ranked for {year} -- it&apos;ll be #1.</p>
+            <p className="p-3 text-sm text-ink-warm-faint">First book ranked for {year} -- it&apos;ll be #1.</p>
           ) : (
             <>
               <button
                 type="button"
                 onClick={() => setInsertAfter(-1)}
-                className={`block w-full border-b border-hairline px-3 py-2 text-left text-xs last:border-0 ${
-                  insertAfter === -1 ? "bg-accent/10 font-medium text-ink" : "text-ink-faint hover:bg-hover"
+                className={`block w-full border-b border-gold px-3 py-2 text-left text-xs last:border-0 ${
+                  insertAfter === -1 ? "bg-accent/10 font-medium text-ink-warm" : "text-ink-warm-faint hover:bg-hover"
                 }`}
               >
                 Place at #1 (top of {year})
@@ -145,13 +145,13 @@ export function RankingPlacementStep({
                   <button
                     type="button"
                     onClick={() => setInsertAfter(idx)}
-                    className={`flex w-full items-center gap-2 border-b border-hairline px-3 py-2 text-left text-sm last:border-0 ${
+                    className={`flex w-full items-center gap-2 border-b border-gold px-3 py-2 text-left text-sm last:border-0 ${
                       insertAfter === idx ? "bg-hover" : "hover:bg-hover"
                     }`}
                   >
-                    <span className="w-6 text-right text-ink-faint">{displayRank(idx)}</span>
-                    <span className="min-w-0 flex-1 truncate text-ink">{r.title}</span>
-                    <span className="shrink-0 text-xs text-ink-faint">insert after</span>
+                    <span className="w-6 text-right text-ink-warm-faint">{displayRank(idx)}</span>
+                    <span className="min-w-0 flex-1 truncate text-ink-warm">{r.title}</span>
+                    <span className="shrink-0 text-xs text-ink-warm-faint">insert after</span>
                   </button>
                   {insertAfter === idx && NewBookRow}
                 </div>

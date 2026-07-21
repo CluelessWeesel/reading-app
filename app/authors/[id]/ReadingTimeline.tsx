@@ -67,15 +67,15 @@ export function ReadingTimeline({ points }: { points: TimelinePoint[] }) {
           );
         })}
       </svg>
-      <div className="flex justify-between text-[10px] text-ink-faint">
+      <div className="flex justify-between text-[10px] text-ink-warm-faint">
         {YEARS.map((y) => (
           <span key={y}>{y}</span>
         ))}
       </div>
-      <p className="mt-1 h-4 truncate text-xs text-ink-faint">
+      <p className="mt-1 h-4 truncate text-xs text-ink-warm-faint">
         {hovered ? (
           <>
-            <span className="text-ink">{hovered.title}</span> — {formatDateShort(hovered.date_finished)}
+            <span className="text-ink-warm">{hovered.title}</span> — {formatDateShort(hovered.date_finished)}
           </>
         ) : (
           "Hover a point for details"

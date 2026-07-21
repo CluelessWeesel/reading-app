@@ -10,8 +10,8 @@ const ROW_HEIGHT = 48; // px -- matches the h-12 row class; drag math assumes fi
 
 const STATUS_STYLE: Record<StatusFlag, { tag: string; className: string }> = {
   Complete: { tag: "C", className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
-  "Not Complete": { tag: "NC", className: "border-hairline bg-hairline text-ink-faint" },
-  Unpublished: { tag: "U", className: "border-accent/40 bg-accent/10 text-ink-muted" },
+  "Not Complete": { tag: "NC", className: "border-gold bg-hairline text-ink-warm-faint" },
+  Unpublished: { tag: "U", className: "border-accent/40 bg-accent/10 text-ink-warm-muted" },
 };
 
 function nextStatus(current: StatusFlag): StatusFlag {
@@ -137,14 +137,14 @@ export function SeriesRankingsView({
 
   return (
     <>
-      <p className="mb-1.5 text-xs text-ink-faint">{rows.length} series</p>
+      <p className="mb-1.5 text-xs text-ink-warm-faint">{rows.length} series</p>
 
       {error && <p className="mb-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
 
       {rows.length === 0 ? (
-        <p className="py-10 text-center text-sm text-ink-faint">Nothing in this list yet.</p>
+        <p className="py-10 text-center text-sm text-ink-warm-faint">Nothing in this list yet.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-hairline">
+        <div className="overflow-hidden rounded-xl border border-gold">
           {visibleRows.map((row, index) => {
             const isDragging = drag?.series === row.series;
             const shift = rowShift(index, drag);
@@ -163,7 +163,7 @@ export function SeriesRankingsView({
                   zIndex: isDragging ? 10 : undefined,
                   position: isDragging ? "relative" : undefined,
                 }}
-                className={`flex h-12 items-center gap-2 border-b border-hairline bg-paper px-2 last:border-0 ${
+                className={`flex h-12 items-center gap-2 border-b border-gold bg-surface-1 px-2 last:border-0 ${
                   isDragging ? "shadow-lg" : ""
                 }`}
               >
@@ -171,12 +171,12 @@ export function SeriesRankingsView({
                   type="button"
                   onPointerDown={(e) => handlePointerDown(e, row.series, index)}
                   aria-label="Drag to reorder"
-                  className="touch-none select-none px-0.5 py-1 text-base leading-none text-ink-faint active:cursor-grabbing"
+                  className="touch-none select-none px-0.5 py-1 text-base leading-none text-ink-warm-faint active:cursor-grabbing"
                 >
                   ⠿
                 </button>
 
-                <span className={`${fraunces.className} w-6 shrink-0 text-right text-base font-semibold text-ink`}>
+                <span className={`${fraunces.className} w-6 shrink-0 text-right text-base font-semibold text-ink-warm`}>
                   {index + 1}
                 </span>
 
@@ -193,11 +193,11 @@ export function SeriesRankingsView({
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/library?series=${encodeURIComponent(row.series)}`}
-                    className={`${fraunces.className} block truncate text-xs font-semibold text-ink hover:underline`}
+                    className={`${fraunces.className} block truncate text-xs font-semibold text-ink-warm hover:underline`}
                   >
                     {row.series}
                   </Link>
-                  <p className="truncate text-[11px] text-ink-faint">
+                  <p className="truncate text-[11px] text-ink-warm-faint">
                     {row.books_read} read{row.avg_score != null ? ` · ${row.avg_score.toFixed(2)} avg` : ""}
                   </p>
                 </div>
@@ -211,7 +211,7 @@ export function SeriesRankingsView({
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="mt-2 text-xs text-ink-faint underline decoration-dotted underline-offset-4 hover:text-ink"
+          className="mt-2 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
         >
           {showAll ? "Show top 10" : `Show all ${rows.length}`}
         </button>
