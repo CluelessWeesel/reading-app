@@ -8,33 +8,36 @@ import type { TierId } from "@/app/rankings/tiers/types";
 const VALID_TIERS = new Set<string>(ALL_TIERS);
 const PLACEABLE = new Set<string>(PLACEABLE_TIERS);
 
-type TierRow = {
-  book_id: number;
-  position: number;
-  title: string;
-  author: string | null;
-  author_id: number | null;
-  cover_url: string | null;
-  score: number | null;
-};
-
-async function getTierRows(client: PoolClient, tier: TierId): Promise<TierRow[]> {
-  const { rows } = await client.query<TierRow>(
-    `select bt.book_id, bt.position, b.title, b.author, b.author_id::int as author_id, b.cover_url, b.score::float8 as score
-     from book_tiers bt
-     join books b on b.book_id = bt.book_id
-     where bt.tier = $1
-     order by bt.position asc`,
+// Every round trip to the DB here costs roughly the same fixed latency
+// regardless of the query's own complexity (measured ~150ms/statement even
+// for a trivial select) -- so the whole point of this file is minimizing
+// the NUMBER of round trips, not how cheap each one is. Full book display
+// data (title/author/cover/score) is deliberately never sent back: the
+// client already holds it for every book on the board (loaded once on
+// page mount, kept in sync locally), so the response only ever carries
+// book_id ordering, and the client re-splices its own already-known
+// objects into place.
+async function getTierBookIds(client: PoolClient, tier: TierId): Promise<number[]> {
+  const { rows } = await client.query<{ book_id: number }>(
+    `select book_id from book_tiers where tier = $1 order by position asc`,
     [tier]
   );
-  return rows;
+  return rows.map((r) => r.book_id);
 }
 
-async function getCapacityPercent(client: PoolClient, tier: TierId): Promise<number> {
-  const { rows } = await client.query<{ value: string }>(`select value from app_settings where key = $1`, [
-    `tier_capacity_${tier.toLowerCase()}`,
-  ]);
-  return rows[0] ? Number(rows[0].value) : 0;
+// tier_fill_completed and the target tier's capacity percentage in one
+// round trip -- both are simple app_settings lookups, and fill-completed
+// is needed on every call regardless of which branch runs.
+async function getSettings(client: PoolClient, toTier: TierId): Promise<{ fillCompleted: boolean; capacityPercent: number }> {
+  const { rows } = await client.query<{ key: string; value: string }>(
+    `select key, value from app_settings where key = any($1)`,
+    [["tier_fill_completed", `tier_capacity_${toTier.toLowerCase()}`]]
+  );
+  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  return {
+    fillCompleted: map.tier_fill_completed === "true",
+    capacityPercent: Number(map[`tier_capacity_${toTier.toLowerCase()}`] ?? 0),
+  };
 }
 
 // Every finished book, not just the ones that already have a book_tiers
@@ -44,6 +47,7 @@ async function getCapacityPercent(client: PoolClient, tier: TierId): Promise<num
 // S capacity as one placed on the last day). Once the fill is complete
 // this is exactly equal to the book_tiers row count anyway, since every
 // finished book has exactly one row by then and Phase 3 keeps it that way.
+// Only queried when a capacity check is actually needed.
 async function getTotalPlaced(client: PoolClient): Promise<number> {
   const { rows } = await client.query<{ n: number }>(
     `select count(*)::int as n from books where date_finished is not null`
@@ -51,25 +55,20 @@ async function getTotalPlaced(client: PoolClient): Promise<number> {
   return rows[0].n;
 }
 
-async function getFillCompleted(client: PoolClient): Promise<boolean> {
-  const { rows } = await client.query<{ value: string }>(`select value from app_settings where key = 'tier_fill_completed'`);
-  return rows[0]?.value === "true";
-}
-
-// Upserts an entire tier's order in one go rather than computing a single
-// insertion index server-side -- the caller (drag-drop or the fill flow)
-// already knows the exact final order it wants, so this just persists it.
-// on conflict covers both "this book already has a row" (a real move) and
-// "this is the book's very first tier row" (fresh finish or fill
-// placement) with the same statement.
+// Upserts an entire tier's order in one go via unnest() rather than one
+// query per book (a per-book loop meant reordering within a big tier --
+// C/D easily have 50+ books -- sent that many sequential round trips for a
+// single drag-drop, which is what made a drop feel like it hung).
 async function upsertOrder(client: PoolClient, tier: TierId, orderedBookIds: number[]): Promise<void> {
-  for (let i = 0; i < orderedBookIds.length; i++) {
-    await client.query(
-      `insert into book_tiers (book_id, tier, position) values ($1, $2, $3)
-       on conflict (book_id) do update set tier = excluded.tier, position = excluded.position`,
-      [orderedBookIds[i], tier, i]
-    );
-  }
+  if (orderedBookIds.length === 0) return;
+  const tiers = orderedBookIds.map(() => tier);
+  const positions = orderedBookIds.map((_, i) => i);
+  await client.query(
+    `insert into book_tiers (book_id, tier, position)
+     select * from unnest($1::int[], $2::text[], $3::int[])
+     on conflict (book_id) do update set tier = excluded.tier, position = excluded.position`,
+    [orderedBookIds, tiers, positions]
+  );
 }
 
 // Handles every way a book lands somewhere on the tier board: the opening
@@ -85,41 +84,62 @@ export async function POST(request: NextRequest) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const { book_id, to_tier, to_index, displaced_book_id, displaced_to_tier } = body as Record<string, unknown>;
+  const { book_id, to_tier, to_index, from_tier_hint, displaced_book_id, displaced_to_tier } = body as Record<string, unknown>;
 
   if (!Number.isInteger(book_id)) {
     return NextResponse.json({ error: "book_id is required." }, { status: 400 });
   }
   if (typeof to_tier !== "string" || !VALID_TIERS.has(to_tier)) {
-    return NextResponse.json({ error: "to_tier must be one of S, A, B, C, D, holding." }, { status: 400 });
+    return NextResponse.json({ error: "to_tier must be one of S, A, B, C, D, E, F, holding." }, { status: 400 });
   }
   const toTier = to_tier as TierId;
   const bookId = book_id as number;
+  // The client already knows which tier it dragged this book FROM -- used
+  // purely as a fetch hint to fold that tier's rows into the same query as
+  // toTier's, never trusted as the authoritative answer: the actual
+  // from-tier is always read back off the locked rows themselves below, so
+  // a stale/wrong hint only costs a fallback query, never a wrong result.
+  const fromTierHint = typeof from_tier_hint === "string" && VALID_TIERS.has(from_tier_hint) ? (from_tier_hint as TierId) : null;
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    const { rows: currentRows } = await client.query<{ tier: TierId }>(
-      `select tier from book_tiers where book_id = $1 for update`,
-      [bookId]
+    // `or book_id = $2` means this always finds the book's real current
+    // tier regardless of whether from_tier_hint was right, wrong, or never
+    // sent -- the hint only ever affects whether that tier's full sibling
+    // list comes back in this same round trip (below) or needs one more
+    // query later; it never affects correctness of fromTier itself.
+    const tiersToLock = fromTierHint && fromTierHint !== toTier ? [toTier, fromTierHint] : [toTier];
+    const { rows: lockedRows } = await client.query<{ book_id: number; tier: TierId; position: number }>(
+      `select book_id, tier, position from book_tiers where tier = any($1) or book_id = $2 for update`,
+      [tiersToLock, bookId]
     );
-    const fromTier: TierId | null = currentRows[0]?.tier ?? null;
+
+    const fromTier: TierId | null = lockedRows.find((r) => r.book_id === bookId)?.tier ?? null;
+    let toTierBookIds = lockedRows
+      .filter((r) => r.tier === toTier)
+      .sort((a, b) => a.position - b.position)
+      .map((r) => r.book_id)
+      .filter((id) => id !== bookId);
+    const fromTierBookIds =
+      fromTier && fromTier !== toTier
+        ? lockedRows
+            .filter((r) => r.tier === fromTier)
+            .sort((a, b) => a.position - b.position)
+            .map((r) => r.book_id)
+            .filter((id) => id !== bookId)
+        : null;
+
+    const { fillCompleted, capacityPercent } = await getSettings(client, toTier);
     const enteringNewTier = fromTier !== toTier;
 
-    const toTierRows = await getTierRows(client, toTier);
-    const toTierBookIds = toTierRows.map((r) => r.book_id).filter((id) => id !== bookId);
-
     if (PLACEABLE.has(toTier) && enteringNewTier && displaced_book_id == null) {
-      const percent = await getCapacityPercent(client, toTier);
       const totalPlaced = await getTotalPlaced(client);
-      const capacity = capacityFor(percent, totalPlaced);
+      const capacity = capacityFor(capacityPercent, totalPlaced);
       if (toTierBookIds.length >= capacity) {
         await client.query("ROLLBACK");
-        return NextResponse.json(
-          { error: "tier-full", tier: toTier, capacity, current: toTierRows },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: "tier-full", tier: toTier, capacity }, { status: 409 });
       }
     }
 
@@ -134,7 +154,7 @@ export async function POST(request: NextRequest) {
         typeof displaced_to_tier === "string" && VALID_TIERS.has(displaced_to_tier)
           ? (displaced_to_tier as TierId)
           : "holding";
-      toTierBookIds.splice(idx, 1);
+      toTierBookIds = toTierBookIds.filter((id) => id !== displaced_book_id);
     }
 
     const insertIndex =
@@ -143,20 +163,18 @@ export async function POST(request: NextRequest) {
         : toTierBookIds.length;
     toTierBookIds.splice(insertIndex, 0, bookId);
 
-    const fillCompleted = await getFillCompleted(client);
-
     await upsertOrder(client, toTier, toTierBookIds);
 
+    let finalFromIds: number[] | null = null;
     if (fromTier && fromTier !== toTier) {
-      const fromRows = await getTierRows(client, fromTier);
-      const fromIds = fromRows.map((r) => r.book_id).filter((id) => id !== bookId);
-      await upsertOrder(client, fromTier, fromIds);
+      finalFromIds = fromTierBookIds ?? (await getTierBookIds(client, fromTier)).filter((id) => id !== bookId);
+      await upsertOrder(client, fromTier, finalFromIds);
     }
 
+    let finalDestIds: number[] | null = null;
     if (typeof displaced_book_id === "number" && displacedTargetTier) {
-      const destRows = await getTierRows(client, displacedTargetTier);
-      const destIds = [...destRows.map((r) => r.book_id), displaced_book_id];
-      await upsertOrder(client, displacedTargetTier, destIds);
+      finalDestIds = [...(await getTierBookIds(client, displacedTargetTier)), displaced_book_id];
+      await upsertOrder(client, displacedTargetTier, finalDestIds);
       if (fillCompleted) {
         await client.query(`insert into tier_moves (book_id, from_tier, to_tier) values ($1, $2, $3)`, [
           displaced_book_id,
@@ -167,23 +185,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (fillCompleted) {
-      await client.query(`insert into tier_moves (book_id, from_tier, to_tier) values ($1, $2, $3)`, [
-        bookId,
-        fromTier,
-        toTier,
-      ]);
+      await client.query(`insert into tier_moves (book_id, from_tier, to_tier) values ($1, $2, $3)`, [bookId, fromTier, toTier]);
     }
 
     await client.query("COMMIT");
 
-    const affectedTiers = new Set<TierId>([toTier]);
-    if (fromTier && fromTier !== toTier) affectedTiers.add(fromTier);
-    if (displacedTargetTier) affectedTiers.add(displacedTargetTier);
+    const order: Partial<Record<TierId, number[]>> = { [toTier]: toTierBookIds };
+    if (fromTier && fromTier !== toTier) order[fromTier] = finalFromIds ?? [];
+    if (displacedTargetTier) order[displacedTargetTier] = finalDestIds ?? [];
 
-    const affected: Partial<Record<TierId, TierRow[]>> = {};
-    for (const tier of affectedTiers) affected[tier] = await getTierRows(client, tier);
-
-    return NextResponse.json({ ok: true, affected });
+    return NextResponse.json({ ok: true, order, fromTier, displacedTargetTier });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);

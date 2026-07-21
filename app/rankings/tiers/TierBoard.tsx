@@ -23,7 +23,26 @@ const TIER_LABEL_CLASS: Record<TierId, string> = {
 };
 
 type DragInfo = { bookId: number; fromTier: TierId; title: string; coverUrl: string | null };
-type PendingSwap = { bookId: number; title: string; toTier: TierId; toIndex: number; tier: TierId; current: TierBook[] };
+type PendingSwap = {
+  bookId: number;
+  fromTier: TierId;
+  title: string;
+  toTier: TierId;
+  toIndex: number;
+  tier: TierId;
+  capacity: number;
+};
+
+// Flattens every tier into a single book_id lookup -- the server's
+// response only ever carries book_id ordering (see the route's own
+// comment on why), so reconstructing full display data after a move means
+// mapping each returned id back to whichever TierBook this component
+// already knows, from before the move.
+function bookLookup(board: TierBoardData): Map<number, TierBook> {
+  const map = new Map<number, TierBook>();
+  for (const tier of ALL_TIERS) for (const book of board[tier]) map.set(book.book_id, book);
+  return map;
+}
 
 export function TierBoard({
   initialBoard,
@@ -58,6 +77,7 @@ export function TierBoard({
 
   async function persistPlacement(
     bookId: number,
+    fromTier: TierId,
     toTier: TierId,
     toIndex: number,
     displaced?: { bookId: number; toTier: TierId }
@@ -72,6 +92,7 @@ export function TierBoard({
           book_id: bookId,
           to_tier: toTier,
           to_index: toIndex,
+          from_tier_hint: fromTier,
           displaced_book_id: displaced?.bookId,
           displaced_to_tier: displaced?.toTier,
         }),
@@ -80,16 +101,24 @@ export function TierBoard({
       if (res.status === 409 && data.error === "tier-full") {
         const book = findBook(board, bookId);
         if (book) {
-          setPendingSwap({ bookId, title: book.title, toTier, toIndex, tier: data.tier, current: data.current });
+          setPendingSwap({ bookId, fromTier, title: book.title, toTier, toIndex, tier: data.tier, capacity: data.capacity });
         }
         return false;
       }
       if (!res.ok) throw new Error(data.error || "Move failed.");
 
       setBoard((prev) => {
+        const lookup = bookLookup(prev);
         const next: TierBoardData = { ...prev };
         for (const tier of ALL_TIERS) {
-          if (data.affected[tier]) next[tier] = data.affected[tier];
+          const ids: number[] | undefined = data.order[tier];
+          if (!ids) continue;
+          next[tier] = ids
+            .map((id: number, i: number) => {
+              const known = lookup.get(id);
+              return known ? { ...known, position: i } : null;
+            })
+            .filter((b: TierBook | null): b is TierBook => b !== null);
         }
         return next;
       });
@@ -112,6 +141,7 @@ export function TierBoard({
 
   function handlePointerDown(e: React.PointerEvent, bookId: number, fromTier: TierId, title: string, coverUrl: string | null) {
     if (e.button != null && e.button !== 0) return;
+    e.preventDefault();
     const startX = e.clientX;
     const startY = e.clientY;
     let dragStarted = false;
@@ -160,7 +190,7 @@ export function TierBoard({
         const targetTier = hoverTierRef.current;
         const targetIndex = hoverIndexRef.current;
         if (targetTier && !(targetTier === fromTier && targetIndex === indexWithin(board, fromTier, bookId))) {
-          persistPlacement(bookId, targetTier, targetIndex);
+          persistPlacement(bookId, fromTier, targetTier, targetIndex);
         }
       }
 
@@ -181,7 +211,7 @@ export function TierBoard({
 
   async function confirmSwap(displacedBookId: number, displacedToTier: TierId) {
     if (!pendingSwap) return;
-    const ok = await persistPlacement(pendingSwap.bookId, pendingSwap.toTier, pendingSwap.toIndex, {
+    const ok = await persistPlacement(pendingSwap.bookId, pendingSwap.fromTier, pendingSwap.toTier, pendingSwap.toIndex, {
       bookId: displacedBookId,
       toTier: displacedToTier,
     });
@@ -261,7 +291,7 @@ export function TierBoard({
       {pendingSwap && (
         <SwapPicker
           tier={pendingSwap.tier}
-          current={pendingSwap.current}
+          current={board[pendingSwap.tier]}
           incomingTitle={pendingSwap.title}
           onConfirm={confirmSwap}
           onCancel={() => setPendingSwap(null)}

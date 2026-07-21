@@ -8,7 +8,19 @@ import { SwapPicker } from "./SwapPicker";
 import { PLACEABLE_TIERS, ALL_TIERS } from "./types";
 import type { Capacities, QueueBook, TierBoardData, TierBook, TierId } from "./types";
 
-type PendingSwap = { bookId: number; title: string; toTier: TierId; tier: TierId; current: TierBook[] };
+type PendingSwap = { bookId: number; title: string; toTier: TierId; tier: TierId };
+
+// Flattens every tier into a single book_id lookup -- the server's
+// response only ever carries book_id ordering, so reconstructing full
+// display data means mapping each returned id back to an already-known
+// TierBook. The one id that's never already known is the book currently
+// being placed (its first-ever tier row) -- the caller adds that one
+// manually from the QueueBook data it already has before using this.
+function bookLookup(board: TierBoardData): Map<number, TierBook> {
+  const map = new Map<number, TierBook>();
+  for (const tier of ALL_TIERS) for (const book of board[tier]) map.set(book.book_id, book);
+  return map;
+}
 
 // The one-off opening ceremony: deals every already-finished book one at a
 // time (highest-scored first, so the top tiers get real candidates early),
@@ -56,15 +68,37 @@ export function FillFlow({
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 409 && data.error === "tier-full") {
-        setPendingSwap({ bookId: current.book_id, title: current.title, toTier, tier: data.tier, current: data.current });
+        setPendingSwap({ bookId: current.book_id, title: current.title, toTier, tier: data.tier });
         return false;
       }
       if (!res.ok) throw new Error(data.error || "Placement failed.");
 
       setBoard((prev) => {
+        const lookup = bookLookup(prev);
+        // The book being placed has no prior tier row, so it's never
+        // already in the lookup above -- add it from the QueueBook data
+        // this component already has (author_id isn't tracked on a
+        // QueueBook, but nothing in this flow ever links to it by id).
+        lookup.set(current.book_id, {
+          book_id: current.book_id,
+          title: current.title,
+          author: current.author,
+          author_id: null,
+          cover_url: current.cover_url,
+          score: current.score,
+          position: 0,
+        });
+
         const next: TierBoardData = { ...prev };
         for (const tier of ALL_TIERS) {
-          if (data.affected[tier]) next[tier] = data.affected[tier];
+          const ids: number[] | undefined = data.order[tier];
+          if (!ids) continue;
+          next[tier] = ids
+            .map((id: number, i: number) => {
+              const known = lookup.get(id);
+              return known ? { ...known, position: i } : null;
+            })
+            .filter((b: TierBook | null): b is TierBook => b !== null);
         }
         return next;
       });
@@ -162,7 +196,7 @@ export function FillFlow({
       {pendingSwap && (
         <SwapPicker
           tier={pendingSwap.tier}
-          current={pendingSwap.current}
+          current={board[pendingSwap.tier]}
           incomingTitle={pendingSwap.title}
           onConfirm={confirmSwap}
           onCancel={() => setPendingSwap(null)}

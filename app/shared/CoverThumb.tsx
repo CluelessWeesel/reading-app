@@ -28,7 +28,13 @@ export function CoverThumb({
     >
       {coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverUrl} alt={`Cover of ${title}`} loading="lazy" className="h-full w-full object-contain" />
+        <img
+          src={coverUrl}
+          alt={`Cover of ${title}`}
+          loading="lazy"
+          draggable={false}
+          className="h-full w-full object-contain"
+        />
       ) : (
         <span className={`${fraunces.className} text-xs font-semibold text-black/25 dark:text-white/25`}>
           {title.charAt(0)}
