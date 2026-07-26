@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { computePagesDelta } from "@/app/shared/positionMath";
+import { computePagesDelta, maxPosition } from "@/app/shared/positionMath";
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
@@ -94,6 +94,16 @@ export async function POST(request: NextRequest) {
           book_id: bookId,
           ok: false,
           error: `Position can't go backwards (currently ${currentPosition}).`,
+        });
+        continue;
+      }
+      const max = maxPosition(formatType, pageCount);
+      if (max != null && newPosition > max) {
+        await client.query("ROLLBACK");
+        results.push({
+          book_id: bookId,
+          ok: false,
+          error: formatType === "audio" ? "Percent can't go past 100." : `That's past the end of the book (${max} pages).`,
         });
         continue;
       }

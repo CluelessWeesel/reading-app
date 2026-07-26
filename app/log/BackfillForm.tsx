@@ -7,6 +7,7 @@ import { daysBetweenInclusive, todayLocalIso } from "../shared/isoDate";
 import {
   computePagesDelta,
   formatPositionLabel,
+  maxPosition,
   positionInputMode,
   positionQuestionLabel,
 } from "../shared/positionMath";
@@ -55,6 +56,14 @@ export function BackfillForm({
       }));
       return;
     }
+    const max = maxPosition(book.format_type, book.page_count);
+    if (max != null && num > max) {
+      setErrors((prev) => ({
+        ...prev,
+        [book.book_id]: book.format_type === "audio" ? "Can't go past 100%." : `Can't go past the end of the book (${max} pages).`,
+      }));
+      return;
+    }
     setErrors((prev) => ({ ...prev, [book.book_id]: null }));
   }
 
@@ -63,6 +72,8 @@ export function BackfillForm({
     if (!raw?.trim()) return null;
     const num = Number(raw);
     if (Number.isNaN(num) || num < book.position) return null;
+    const max = maxPosition(book.format_type, book.page_count);
+    if (max != null && num > max) return null;
     const delta = computePagesDelta(num, book.position, book.format_type, book.page_count);
     if (delta === null) return null;
     return `+${delta} page${delta === 1 ? "" : "s"} total`;

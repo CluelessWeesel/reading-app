@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import { computePagesDelta } from "@/app/shared/positionMath";
+import { computePagesDelta, maxPosition } from "@/app/shared/positionMath";
 
 export type LogPositionResult =
   | { ok: true; delta: number }
@@ -22,6 +22,15 @@ export async function logForwardProgress(
   pageCount: number | null,
   date: string
 ): Promise<LogPositionResult> {
+  const max = maxPosition(formatType, pageCount);
+  if (max != null && newPosition > max) {
+    return {
+      ok: false,
+      status: 400,
+      error: formatType === "audio" ? "Percent can't go past 100." : `That's past the end of the book (${max} pages).`,
+    };
+  }
+
   const { rows: todayRows } = await client.query(
     `select pages from daily_reading where date = $1 and book_id = $2`,
     [date, bookId]

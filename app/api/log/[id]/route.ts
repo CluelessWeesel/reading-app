@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { maxPosition } from "@/app/shared/positionMath";
 
 // Fixes a mistaken day's page count. current_books.position is the running
 // total of every day's pages (converted to percent for audio via page_count),
@@ -72,6 +73,19 @@ export async function PATCH(
         if (newPosition < 0) {
           await client.query("ROLLBACK");
           return NextResponse.json({ error: "That would put the position below zero." }, { status: 400 });
+        }
+        const max = maxPosition(formatType, pageCount);
+        if (max != null && newPosition > max) {
+          await client.query("ROLLBACK");
+          return NextResponse.json(
+            {
+              error:
+                formatType === "audio"
+                  ? "That would put the percent past 100."
+                  : `That would put the position past the end of the book (${max} pages).`,
+            },
+            { status: 400 }
+          );
         }
 
         await client.query(`update current_books set position = $1 where book_id = $2`, [newPosition, bookId]);

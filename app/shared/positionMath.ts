@@ -20,6 +20,15 @@ export function computePagesDelta(
   return Math.round(newPosition - basePosition);
 }
 
+// The furthest a position can legitimately go: 100 (percent) for audio,
+// or the book's own page_count for physical/ebook. Null means there's
+// nothing to enforce -- a physical/ebook book with no page_count set
+// (schema allows it, even though the UI discourages it).
+export function maxPosition(formatType: string | null, pageCount: number | null): number | null {
+  if (formatType === "audio") return 100;
+  return pageCount;
+}
+
 export function formatPositionLabel(
   position: number,
   formatType: string | null,
