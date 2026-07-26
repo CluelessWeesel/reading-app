@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { fraunces } from "../shared/fonts";
@@ -105,8 +106,14 @@ export function StatsView({
   return (
     <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-6">
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-2">
           <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>Stats</h1>
+          <Link
+            href="/stats/compare"
+            className="rounded-full border border-gold bg-surface-1 px-4 py-1.5 text-sm font-medium text-ink-warm-muted transition hover:bg-hover"
+          >
+            Compare a Year →
+          </Link>
         </header>
 
         <div className="mb-2 flex flex-wrap gap-2">

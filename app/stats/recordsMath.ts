@@ -79,7 +79,7 @@ function theSlowBurn(ctx: RecordContext): RecordResult {
   return bookResult(worst, `${(worst.avg_pages_per_day as number).toFixed(1)} pg/day`);
 }
 
-function peakDay(ctx: RecordContext): RecordResult {
+export function peakDay(ctx: RecordContext): RecordResult {
   if (ctx.dailyRows.length === 0) return NO;
   const best = ctx.dailyRows.reduce((a, b) => (b.pages > a.pages ? b : a));
   if (best.pages <= 0) return NO;
@@ -107,7 +107,7 @@ function goldenWeek(ctx: RecordContext): RecordResult {
   };
 }
 
-function goldenMonth(ctx: RecordContext): RecordResult {
+export function goldenMonth(ctx: RecordContext): RecordResult {
   const byMonth = new Map<string, number>();
   for (const r of ctx.dailyRows) byMonth.set(monthKey(r.date), (byMonth.get(monthKey(r.date)) ?? 0) + r.pages);
   if (byMonth.size === 0) return NO;

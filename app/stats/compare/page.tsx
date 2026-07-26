@@ -1,21 +1,18 @@
-import { getStatsData } from "./getStatsData";
-import { StatsView } from "./StatsView";
+import { getStatsData } from "../getStatsData";
+import { CompareView } from "./CompareView";
 
 export const dynamic = "force-dynamic";
 
-export default async function StatsPage() {
+export default async function ComparePage() {
   const data = await getStatsData();
 
   return (
-    <StatsView
+    <CompareView
       dailyRows={data.dailyRows}
       formatDailyRows={data.formatDailyRows}
       books={data.books}
       goals={data.goals}
-      seriesParents={data.seriesParents}
-      allGenres={data.allGenres}
       tbrEntries={data.tbrEntries}
-      appSettings={data.appSettings}
       today={data.today}
       currentYear={data.currentYear}
       years={data.years}
