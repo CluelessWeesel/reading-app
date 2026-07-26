@@ -1,26 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fraunces } from "../../shared/fonts";
 import { CoverThumb } from "../../shared/CoverThumb";
-import { capacityFor, totalPlacedFromBoard } from "./tierMath";
+import { computeCapacities, totalJudgedFromBoard } from "./tierMath";
 import { SwapPicker } from "./SwapPicker";
+import { TIER_LABEL_CLASS } from "./tierColors";
 import { ALL_TIERS } from "./types";
 import type { Capacities, TierBoardData, TierBook, TierId } from "./types";
 
 const DRAG_THRESHOLD = 6; // px -- shorter moves are a tap/click, not a drag
-
-const TIER_LABEL_CLASS: Record<TierId, string> = {
-  S: "text-gold-ink",
-  A: "text-accent-purple",
-  B: "text-accent-blue",
-  C: "text-accent-teal",
-  D: "text-accent-coral",
-  E: "text-accent-amber",
-  F: "text-accent-pink",
-  holding: "text-ink-warm-faint",
-};
 
 type DragInfo = { bookId: number; fromTier: TierId; title: string; coverUrl: string | null };
 type PendingSwap = {
@@ -67,10 +57,16 @@ export function TierBoard({
   const hoverTierRef = useRef<TierId | null>(null);
   const hoverIndexRef = useRef<number>(0);
 
-  const totalPlaced = totalPlacedFromBoard(board);
+  // Computed together, not per-tier -- computeCapacities' guarantee that
+  // capacities always sum to at least the judged total only holds when all
+  // seven tiers are derived from the same call.
+  const tierCapacities = useMemo(
+    () => computeCapacities(capacities, totalJudgedFromBoard(board)),
+    [capacities, board]
+  );
 
   function capacityInfo(tier: Exclude<TierId, "holding">) {
-    const capacity = capacityFor(capacities[tier], totalPlaced);
+    const capacity = tierCapacities[tier];
     const count = board[tier].length;
     return { capacity, count, full: count >= capacity };
   }

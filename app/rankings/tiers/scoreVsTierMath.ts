@@ -37,3 +37,15 @@ export function computeDisagreements(rows: ScoreVsTierRow[]): Disagreement[] {
   });
   return results.sort((a, b) => Math.abs(b.disagreement) - Math.abs(a.disagreement));
 }
+
+// The tier-stats page's headline number: "your tiers agree with your
+// scores N% of the time." disagreement is already signed in [-1, 1] (0 =
+// perfect agreement, +-1 = maximal), so the mean absolute value inverted
+// and expressed as a percentage is a single, intuitive summary of how
+// tightly the two systems track each other overall.
+export function computeAgreement(disagreements: Disagreement[]): number | null {
+  if (disagreements.length === 0) return null;
+  const meanAbsDisagreement =
+    disagreements.reduce((sum, d) => sum + Math.abs(d.disagreement), 0) / disagreements.length;
+  return (1 - meanAbsDisagreement) * 100;
+}

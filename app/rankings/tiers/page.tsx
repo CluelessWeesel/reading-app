@@ -1,8 +1,6 @@
 import { pool } from "@/lib/db";
 import { TierBoardShell } from "./TierBoardShell";
 import { PLACEABLE_TIERS } from "./types";
-import { computeDisagreements } from "./scoreVsTierMath";
-import type { ScoreVsTierRow } from "./scoreVsTierMath";
 import type { Capacities, QueueBook, TierBoardData, TierId, TierMove } from "./types";
 
 export const dynamic = "force-dynamic";
@@ -101,23 +99,12 @@ async function getReclassifications(): Promise<TierMove[]> {
   return rows;
 }
 
-async function getScoreVsTierRows(): Promise<ScoreVsTierRow[]> {
-  const { rows } = await pool.query<ScoreVsTierRow>(
-    `select b.book_id, b.title, b.cover_url, b.score::float8 as score, bt.tier
-     from books b
-     join book_tiers bt on bt.book_id = b.book_id
-     where b.score is not null`
-  );
-  return rows;
-}
-
 export default async function TiersPage() {
   const [board, settings] = await Promise.all([getBoard(), getSettings()]);
   const queue = settings.fillCompleted ? [] : await getUnfilledQueue();
-  const [recentMoves, reclassifications, scoreVsTierRows] = settings.fillCompleted
-    ? await Promise.all([getRecentMoves(), getReclassifications(), getScoreVsTierRows()])
-    : [[], [], []];
-  const disagreements = computeDisagreements(scoreVsTierRows);
+  const [recentMoves, reclassifications] = settings.fillCompleted
+    ? await Promise.all([getRecentMoves(), getReclassifications()])
+    : [[], []];
 
   return (
     <TierBoardShell
@@ -127,7 +114,6 @@ export default async function TiersPage() {
       initialQueue={queue}
       recentMoves={recentMoves}
       reclassifications={reclassifications}
-      disagreements={disagreements}
     />
   );
 }

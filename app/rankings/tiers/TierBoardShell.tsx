@@ -1,12 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fraunces } from "../../shared/fonts";
 import { TierBoard } from "./TierBoard";
 import { FillFlow } from "./FillFlow";
 import { MovementPanel } from "./MovementPanel";
-import { ScoreVsTierPanel } from "./ScoreVsTierPanel";
-import type { Disagreement } from "./scoreVsTierMath";
 import type { Capacities, QueueBook, TierBoardData, TierMove } from "./types";
 
 export function TierBoardShell({
@@ -16,7 +15,6 @@ export function TierBoardShell({
   initialQueue,
   recentMoves,
   reclassifications,
-  disagreements,
 }: {
   initialBoard: TierBoardData;
   capacities: Capacities;
@@ -24,7 +22,6 @@ export function TierBoardShell({
   initialQueue: QueueBook[];
   recentMoves: TierMove[];
   reclassifications: TierMove[];
-  disagreements: Disagreement[];
 }) {
   const router = useRouter();
 
@@ -42,6 +39,15 @@ export function TierBoardShell({
   return (
     <div className="min-h-full flex-1 px-4 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
+        <div className="mb-4 flex items-center justify-between text-sm">
+          <Link href="/rankings" className="text-ink-warm-faint hover:text-ink-warm hover:underline">
+            ← Back to rankings
+          </Link>
+          <Link href="/rankings/tiers/stats" className="text-ink-warm-faint hover:text-ink-warm hover:underline">
+            Tier Stats →
+          </Link>
+        </div>
+
         <header className="mb-6">
           <h1 className={`${fraunces.className} text-3xl font-semibold text-ink-warm sm:text-4xl`}>Tier Board</h1>
           <p className="mt-1 text-sm text-ink-warm-faint">
@@ -53,7 +59,6 @@ export function TierBoardShell({
 
         <div className="mt-10 space-y-6">
           <MovementPanel recentMoves={recentMoves} reclassifications={reclassifications} />
-          <ScoreVsTierPanel disagreements={disagreements} />
         </div>
       </div>
     </div>

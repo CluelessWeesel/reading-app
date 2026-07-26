@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
-import { capacityFor } from "@/app/rankings/tiers/tierMath";
+import { computeCapacities } from "@/app/rankings/tiers/tierMath";
 import { ALL_TIERS, PLACEABLE_TIERS } from "@/app/rankings/tiers/types";
-import type { TierId } from "@/app/rankings/tiers/types";
+import type { Capacities, PlaceableTier, TierId } from "@/app/rankings/tiers/types";
 
 const VALID_TIERS = new Set<string>(ALL_TIERS);
 const PLACEABLE = new Set<string>(PLACEABLE_TIERS);
@@ -25,32 +25,27 @@ async function getTierBookIds(client: PoolClient, tier: TierId): Promise<number[
   return rows.map((r) => r.book_id);
 }
 
-// tier_fill_completed and the target tier's capacity percentage in one
-// round trip -- both are simple app_settings lookups, and fill-completed
-// is needed on every call regardless of which branch runs.
-async function getSettings(client: PoolClient, toTier: TierId): Promise<{ fillCompleted: boolean; capacityPercent: number }> {
+// tier_fill_completed and every tier's capacity percentage in one round
+// trip -- fetching all seven (not just the target tier's) is what lets the
+// capacity check below run them through computeCapacities together, which
+// is the only way its sum-never-falls-short guarantee actually holds.
+async function getSettings(client: PoolClient): Promise<{ fillCompleted: boolean; capacities: Capacities }> {
   const { rows } = await client.query<{ key: string; value: string }>(
-    `select key, value from app_settings where key = any($1)`,
-    [["tier_fill_completed", `tier_capacity_${toTier.toLowerCase()}`]]
+    `select key, value from app_settings where key like 'tier_%'`
   );
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  return {
-    fillCompleted: map.tier_fill_completed === "true",
-    capacityPercent: Number(map[`tier_capacity_${toTier.toLowerCase()}`] ?? 0),
-  };
+  const capacities = {} as Capacities;
+  for (const tier of PLACEABLE_TIERS) capacities[tier] = Number(map[`tier_capacity_${tier.toLowerCase()}`] ?? 0);
+  return { fillCompleted: map.tier_fill_completed === "true", capacities };
 }
 
-// Every finished book, not just the ones that already have a book_tiers
-// row -- during the opening fill this is what keeps capacity at its true,
-// mature value from the very first placement instead of ramping up from
-// zero as the fill progresses (a book placed on day one deserves the same
-// S capacity as one placed on the last day). Once the fill is complete
-// this is exactly equal to the book_tiers row count anyway, since every
-// finished book has exactly one row by then and Phase 3 keeps it that way.
-// Only queried when a capacity check is actually needed.
+// Judged (non-Holding) book_tiers rows -- the same total the board's own
+// display uses (see totalJudgedFromBoard), so enforcement here can never
+// disagree with what's on screen. Only queried when a capacity check is
+// actually needed.
 async function getTotalPlaced(client: PoolClient): Promise<number> {
   const { rows } = await client.query<{ n: number }>(
-    `select count(*)::int as n from books where date_finished is not null`
+    `select count(*)::int as n from book_tiers where tier != 'holding'`
   );
   return rows[0].n;
 }
@@ -131,12 +126,12 @@ export async function POST(request: NextRequest) {
             .filter((id) => id !== bookId)
         : null;
 
-    const { fillCompleted, capacityPercent } = await getSettings(client, toTier);
+    const { fillCompleted, capacities } = await getSettings(client);
     const enteringNewTier = fromTier !== toTier;
 
     if (PLACEABLE.has(toTier) && enteringNewTier && displaced_book_id == null) {
       const totalPlaced = await getTotalPlaced(client);
-      const capacity = capacityFor(capacityPercent, totalPlaced);
+      const capacity = computeCapacities(capacities, totalPlaced)[toTier as PlaceableTier];
       if (toTierBookIds.length >= capacity) {
         await client.query("ROLLBACK");
         return NextResponse.json({ error: "tier-full", tier: toTier, capacity }, { status: 409 });
@@ -175,7 +170,7 @@ export async function POST(request: NextRequest) {
     if (typeof displaced_book_id === "number" && displacedTargetTier) {
       finalDestIds = [...(await getTierBookIds(client, displacedTargetTier)), displaced_book_id];
       await upsertOrder(client, displacedTargetTier, finalDestIds);
-      if (fillCompleted) {
+      if (fillCompleted && toTier !== displacedTargetTier) {
         await client.query(`insert into tier_moves (book_id, from_tier, to_tier) values ($1, $2, $3)`, [
           displaced_book_id,
           toTier,
@@ -184,7 +179,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (fillCompleted) {
+    // A same-tier reorder (picking a book up and setting it back down in the
+    // same tier, whether at a new position or the same one) isn't a
+    // reclassification -- only log a move when the tier actually changed.
+    if (fillCompleted && fromTier !== toTier) {
       await client.query(`insert into tier_moves (book_id, from_tier, to_tier) values ($1, $2, $3)`, [bookId, fromTier, toTier]);
     }
 

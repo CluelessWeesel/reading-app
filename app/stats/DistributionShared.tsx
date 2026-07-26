@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { coverGradient } from "../shared/coverPalette";
 import { fraunces } from "../shared/fonts";
+import { InfoTooltip } from "../shared/InfoTooltip";
 
 export function pillClass(active: boolean): string {
   return `rounded-full px-3 py-1 text-xs font-medium transition ${
@@ -17,11 +18,15 @@ export function pillClass(active: boolean): string {
 // a card needs.
 export function CollapsibleCard({
   title,
+  description,
   toggle,
   excludedNote,
   children,
 }: {
   title: string;
+  // Hoverable "ⓘ" bubble next to the title, for a card whose metric isn't
+  // self-explanatory from its title/bars alone.
+  description?: string;
   toggle?: ReactNode;
   excludedNote?: string | null;
   children: ReactNode;
@@ -31,7 +36,10 @@ export function CollapsibleCard({
   return (
     <div className="rounded-xl border border-gold bg-surface-1 p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className={`${fraunces.className} text-base font-semibold text-ink-warm`}>{title}</h3>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h3 className={`${fraunces.className} text-base font-semibold text-ink-warm`}>{title}</h3>
+          {description && <InfoTooltip text={description} />}
+        </div>
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}

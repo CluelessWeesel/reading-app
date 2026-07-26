@@ -5,17 +5,17 @@ import Link from "next/link";
 import { fraunces } from "../../shared/fonts";
 import { CoverThumb } from "../../shared/CoverThumb";
 import { TIER_ORDER, monthsAgoIso } from "./movementMath";
+import { tierLabel } from "./tierColors";
 import type { TierId, TierMove } from "./types";
-
-function tierLabel(tier: TierId): string {
-  return tier === "holding" ? "Holding" : tier;
-}
 
 function shortDate(iso: string): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
-function MoveRow({ move }: { move: TierMove }) {
+// Exported for reuse by the tier-stats page's Movement section, which
+// renders the same move-row shape (cover, title, from -> to, date) for its
+// own climbers/fallers and most-moved lists.
+export function MoveRow({ move }: { move: TierMove }) {
   return (
     <div className="flex items-center gap-2.5 py-1.5">
       <CoverThumb title={move.title} coverUrl={move.cover_url} className="aspect-[2/3] w-7 shrink-0" />
