@@ -10,7 +10,11 @@ import { formatExactUtc, formatRelativeTime } from "../shared/relativeTime";
 import { authorSortKey } from "../shared/authorSortKey";
 import { StartBookModal } from "../shared/StartBookModal";
 import { titleSortKey } from "../shared/titleSortKey";
+import { MakeCallsFlow } from "./MakeCallsFlow";
+import { PredictionModal } from "./PredictionModal";
 import { TbrEntryModal } from "./TbrEntryModal";
+import { TbrStatsPanel } from "./TbrStatsPanel";
+import type { ResolvedPrediction } from "./tbrPredictionMath";
 import type { TbrEntry } from "./types";
 
 // Relative time ("3 minutes ago") depends on Date.now() at render time, which
@@ -134,10 +138,12 @@ export function TbrView({
   entries: initialEntries,
   allGenres,
   allSubgenres,
+  resolvedPredictions,
 }: {
   entries: TbrEntry[];
   allGenres: string[];
   allSubgenres: string[];
+  resolvedPredictions: ResolvedPrediction[];
 }) {
   const [entries, setEntries] = useState(initialEntries);
   const [search, setSearch] = useState("");
@@ -150,6 +156,17 @@ export function TbrView({
   const [lengthFilter, setLengthFilter] = useState(ALL);
   const [modalTarget, setModalTarget] = useState<TbrEntry | "new" | null>(null);
   const [startBookTarget, setStartBookTarget] = useState<TbrEntry | "generic" | null>(null);
+  // Off by default -- sealing only works if looking is a deliberate choice.
+  const [showPredictions, setShowPredictions] = useState(false);
+  const [predictTarget, setPredictTarget] = useState<TbrEntry | null>(null);
+  const [makeCallsOpen, setMakeCallsOpen] = useState(false);
+
+  const unpredictedCount = useMemo(() => entries.filter((e) => e.predicted_score == null).length, [entries]);
+
+  function handlePredicted(updated: TbrEntry) {
+    setEntries((prev) => prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e)));
+    setPredictTarget(null);
+  }
 
   const ownedCount = useMemo(() => entries.filter((e) => e.owned === true).length, [entries]);
   const unownedCount = useMemo(() => entries.filter((e) => e.owned === false).length, [entries]);
@@ -332,6 +349,14 @@ export function TbrView({
             </div>
           </div>
         </header>
+
+        <TbrStatsPanel
+          unpredictedCount={unpredictedCount}
+          resolvedPredictions={resolvedPredictions}
+          showPredictions={showPredictions}
+          onToggleShowPredictions={() => setShowPredictions((v) => !v)}
+          onMakeCalls={() => setMakeCallsOpen(true)}
+        />
 
         <CurrentlyReadingPanel />
 
@@ -538,6 +563,25 @@ export function TbrView({
                 <div className="shrink-0 text-right text-xs text-ink-warm-faint">
                   {entry.word_count != null ? `${entry.word_count.toLocaleString()} words` : "--"}
                 </div>
+                {entry.predicted_score == null ? (
+                  <button
+                    type="button"
+                    onClick={() => setPredictTarget(entry)}
+                    className="shrink-0 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+                  >
+                    Predict
+                  </button>
+                ) : (
+                  showPredictions && (
+                    <button
+                      type="button"
+                      onClick={() => setPredictTarget(entry)}
+                      className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent"
+                    >
+                      {entry.predicted_score.toFixed(1)} ±{entry.predicted_margin?.toFixed(1)}
+                    </button>
+                  )
+                )}
                 <button
                   type="button"
                   onClick={() => setStartBookTarget(entry)}
@@ -587,13 +631,34 @@ export function TbrView({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setModalTarget(entry)}
-                  className="self-start px-0.5 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
-                >
-                  Edit
-                </button>
+                <div className="flex items-center gap-2 px-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setModalTarget(entry)}
+                    className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+                  >
+                    Edit
+                  </button>
+                  {entry.predicted_score == null ? (
+                    <button
+                      type="button"
+                      onClick={() => setPredictTarget(entry)}
+                      className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+                    >
+                      Predict
+                    </button>
+                  ) : (
+                    showPredictions && (
+                      <button
+                        type="button"
+                        onClick={() => setPredictTarget(entry)}
+                        className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent"
+                      >
+                        {entry.predicted_score.toFixed(1)} ±{entry.predicted_margin?.toFixed(1)}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -618,6 +683,23 @@ export function TbrView({
           onClose={() => setStartBookTarget(null)}
           onStarted={() => setStartBookTarget(null)}
           onTbrEntryConsumed={handleTbrConsumed}
+        />
+      )}
+
+      {predictTarget && (
+        <PredictionModal
+          entry={predictTarget}
+          revealed={showPredictions}
+          onClose={() => setPredictTarget(null)}
+          onSaved={handlePredicted}
+        />
+      )}
+
+      {makeCallsOpen && (
+        <MakeCallsFlow
+          initialQueue={entries.filter((e) => e.predicted_score == null)}
+          onPredicted={handlePredicted}
+          onDone={() => setMakeCallsOpen(false)}
         />
       )}
     </div>

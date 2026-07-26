@@ -13,6 +13,7 @@ export async function GET() {
        b.word_count::float8 as word_count,
        b.predicted_score::float8 as predicted_score,
        b.predicted_margin::float8 as predicted_margin,
+       to_char(b.predicted_at, 'YYYY-MM-DD"T"HH24:MI:SS') as predicted_at,
        to_char(b.date_started, 'YYYY-MM-DD') as date_started,
        to_char(b.date_finished, 'YYYY-MM-DD') as date_finished
      from current_books cb

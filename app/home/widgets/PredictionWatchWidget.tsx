@@ -28,6 +28,12 @@ export function PredictionWatchWidget({ watch }: { watch: PredictionWatch | null
       <p className="mt-2 text-[11px] text-ink-warm-faint">
         All-time accuracy: off by <span className="font-semibold text-ink-warm">{watch.seasonAccuracy.toFixed(2)}</span> on
         average across {watch.seasonCount} prediction{watch.seasonCount === 1 ? "" : "s"}
+        {watch.hitRate != null && (
+          <>
+            {" "}
+            · <span className="font-semibold text-ink-warm">{Math.round(watch.hitRate * 100)}%</span> hit within margin
+          </>
+        )}
       </p>
     </WidgetCard>
   );

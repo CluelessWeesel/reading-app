@@ -341,7 +341,7 @@ async function getRecentRankMoves(today: string): Promise<RankMove[]> {
 }
 
 async function getPredictionCandidates(): Promise<
-  { book_id: number; title: string; predicted_score: number; score: number; date_finished: string }[]
+  { book_id: number; title: string; predicted_score: number; predicted_margin: number | null; score: number; date_finished: string }[]
 > {
   // All-time, not just this year -- the manual prediction feature may not
   // have been used yet in the current year even if it has older data.
@@ -349,10 +349,12 @@ async function getPredictionCandidates(): Promise<
     book_id: number;
     title: string;
     predicted_score: number;
+    predicted_margin: number | null;
     score: number;
     date_finished: string;
   }>(
-    `select book_id, title, predicted_score::float8 as predicted_score, score::float8 as score,
+    `select book_id, title, predicted_score::float8 as predicted_score,
+            predicted_margin::float8 as predicted_margin, score::float8 as score,
             to_char(date_finished, 'YYYY-MM-DD') as date_finished
      from books
      where predicted_score is not null and score is not null and date_finished is not null

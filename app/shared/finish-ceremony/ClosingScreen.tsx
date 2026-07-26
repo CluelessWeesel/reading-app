@@ -36,6 +36,19 @@ export function ClosingScreen({
       ? daysBetweenInclusive(book.date_started, book.date_finished)
       : null;
 
+  // The one and only reveal moment -- everywhere else (TBR rows, the start-
+  // a-book flow) this stays sealed. Only renders once there's both a call
+  // and a real result to compare it against.
+  const hasPrediction = book.predicted_score != null && book.score != null;
+  const hit =
+    hasPrediction && book.predicted_margin != null
+      ? Math.abs((book.score as number) - (book.predicted_score as number)) <= book.predicted_margin
+      : null;
+  const daysSinceCall =
+    hasPrediction && book.predicted_at && book.date_finished
+      ? daysBetweenInclusive(book.predicted_at.slice(0, 10), book.date_finished)
+      : null;
+
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-10 text-center">
       <div className="mb-6 w-full">
@@ -57,6 +70,27 @@ export function ClosingScreen({
           value={book.word_count != null ? Math.round(book.word_count).toLocaleString() : "--"}
         />
       </div>
+
+      {hasPrediction && (
+        <div className="mb-8 w-full rounded-xl border border-gold bg-surface-1 px-6 py-4">
+          <p className="text-xs uppercase tracking-wide text-ink-warm-faint">Your call</p>
+          <p className={`${fraunces.className} mt-1 text-lg text-ink-warm`}>
+            Predicted {(book.predicted_score as number).toFixed(1)}
+            {book.predicted_margin != null ? ` ±${book.predicted_margin.toFixed(1)}` : ""} · Actual{" "}
+            {(book.score as number).toFixed(1)}
+          </p>
+          {hit != null && (
+            <p className={`mt-1 text-sm font-medium ${hit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+              {hit ? "Hit" : "Miss"}
+            </p>
+          )}
+          {daysSinceCall != null && (
+            <p className="mt-1 text-xs text-ink-warm-faint">
+              You called this {daysSinceCall} day{daysSinceCall === 1 ? "" : "s"} ago.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mb-8 rounded-xl border border-gold bg-surface-1 px-6 py-4">
         <p className="text-sm text-ink-warm-faint">

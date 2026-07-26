@@ -30,6 +30,7 @@ export type Book = {
   review: string | null;
   predicted_score: number | null;
   predicted_margin: number | null;
+  predicted_at: string | null;
   legacy_notes: string | null;
   indie: boolean | null;
 };

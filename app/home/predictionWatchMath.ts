@@ -4,13 +4,23 @@ export type PredictionWatch = {
   recent: PredictionRow[];
   seasonAccuracy: number; // mean absolute error this year, in score points
   seasonCount: number;
+  // Fraction (0-1) landing within its own stated margin -- null when no
+  // resolved prediction has a margin recorded (all pre-dating this field).
+  hitRate: number | null;
 };
 
 // books here is every finished book this year with BOTH a manual
 // predicted_score and a final score -- season accuracy is the mean
 // |predicted - actual| across all of them, not just the recent ones shown.
 export function computePredictionWatch(
-  books: { book_id: number; title: string; predicted_score: number; score: number; date_finished: string }[]
+  books: {
+    book_id: number;
+    title: string;
+    predicted_score: number;
+    predicted_margin: number | null;
+    score: number;
+    date_finished: string;
+  }[]
 ): PredictionWatch | null {
   if (books.length === 0) return null;
 
@@ -25,5 +35,12 @@ export function computePredictionWatch(
   const seasonAccuracy =
     books.reduce((sum, b) => sum + Math.abs(b.predicted_score - b.score), 0) / books.length;
 
-  return { recent, seasonAccuracy, seasonCount: books.length };
+  const withMargin = books.filter((b) => b.predicted_margin != null);
+  const hitRate =
+    withMargin.length > 0
+      ? withMargin.filter((b) => Math.abs(b.predicted_score - b.score) <= (b.predicted_margin as number)).length /
+        withMargin.length
+      : null;
+
+  return { recent, seasonAccuracy, seasonCount: books.length, hitRate };
 }

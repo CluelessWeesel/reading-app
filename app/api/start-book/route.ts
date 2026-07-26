@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
     let bookWordCount: number | null;
     let bookPageCount: number | null;
     let tbrIdNum: number | null = null;
+    // Carried silently onto the book row -- never touched by anything in
+    // this request/response, so the client never sees the value it's
+    // relaying. predicted_at travels with it verbatim (not re-stamped),
+    // since "how long ago the call was made" measures from the real
+    // TBR-stage entry, not from today's start date.
+    let predictedScore: number | null = null;
+    let predictedMargin: number | null = null;
+    let predictedAt: string | null = null;
 
     if (source === "tbr") {
       tbrIdNum = Number(tbrId);
@@ -59,7 +67,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid TBR id." }, { status: 400 });
       }
       const { rows } = await client.query(
-        `select title, author, genre, subgenre, cover_url, author_id, word_count, page_count
+        `select title, author, genre, subgenre, cover_url, author_id, word_count, page_count,
+                predicted_score::float8 as predicted_score, predicted_margin::float8 as predicted_margin,
+                to_char(predicted_at, 'YYYY-MM-DD"T"HH24:MI:SS') as predicted_at
          from tbr where id = $1`,
         [tbrIdNum]
       );
@@ -74,6 +84,9 @@ export async function POST(request: NextRequest) {
       bookCoverUrl = rows[0].cover_url;
       bookWordCount = word_count != null ? (word_count as number) : rows[0].word_count;
       bookPageCount = page_count != null ? (page_count as number) : rows[0].page_count;
+      predictedScore = rows[0].predicted_score;
+      predictedMargin = rows[0].predicted_margin;
+      predictedAt = rows[0].predicted_at;
     } else {
       bookTitle = (title as string).trim();
       bookAuthor = typeof author === "string" ? author.trim() || null : null;
@@ -89,10 +102,24 @@ export async function POST(request: NextRequest) {
     const bookAuthorId = await resolveAuthorId(client, bookAuthor);
 
     const { rows: bookRows } = await client.query(
-      `insert into books (title, author, genre, subgenre, cover_url, author_id, format_type, word_count, page_count, status, date_started, reread)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reading', $10, false)
+      `insert into books (title, author, genre, subgenre, cover_url, author_id, format_type, word_count, page_count, status, date_started, reread, predicted_score, predicted_margin, predicted_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reading', $10, false, $11, $12, $13)
        returning book_id`,
-      [bookTitle, bookAuthor, bookGenre, bookSubgenre, bookCoverUrl, bookAuthorId, format_type, bookWordCount, bookPageCount, date_started]
+      [
+        bookTitle,
+        bookAuthor,
+        bookGenre,
+        bookSubgenre,
+        bookCoverUrl,
+        bookAuthorId,
+        format_type,
+        bookWordCount,
+        bookPageCount,
+        date_started,
+        predictedScore,
+        predictedMargin,
+        predictedAt,
+      ]
     );
     const bookId = bookRows[0].book_id;
 
