@@ -45,7 +45,7 @@ export function RankingsShell({
   seriesData,
   mainSeriesData,
   subSeriesData,
-  adjustmentWindow,
+  adjustmentWindows,
   holdingCount,
 }: {
   bookData: Record<number, YearData>;
@@ -56,7 +56,7 @@ export function RankingsShell({
   seriesData: SeriesRankedRow[];
   mainSeriesData: SeriesRankedRow[];
   subSeriesData: SeriesRankedRow[];
-  adjustmentWindow: AdjustmentWindowData;
+  adjustmentWindows: Record<number, AdjustmentWindowData>;
   holdingCount: number;
 }) {
   const [tab, setTab] = useState<Tab>("books");
@@ -111,7 +111,7 @@ export function RankingsShell({
             defaultYear={defaultYear}
             bookHonours={bookHonours}
             sealedYears={sealedYears}
-            adjustmentWindow={adjustmentWindow}
+            adjustmentWindows={adjustmentWindows}
           />
         )}
 

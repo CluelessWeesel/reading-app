@@ -121,12 +121,12 @@ type AdjustmentHistoryEvent = {
 // doesn't show up here at all. See app/rankings/adjustmentWindow.ts.
 async function getAdjustmentHistory(bookId: number): Promise<AdjustmentHistoryEvent[]> {
   const { rows } = await pool.query<AdjustmentHistoryEvent>(
-    `select 'rank' as kind, rc.old_rank::numeric as old_val, rc.new_rank::numeric as new_val,
+    `select 'rank' as kind, rc.old_rank::float8 as old_val, rc.new_rank::float8 as new_val,
             rc.reason, to_char(rc.changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as changed_at
      from rank_changes rc
      where rc.book_id = $1 and rc.reason is not null
      union all
-     select 'score' as kind, sc.old_score as old_val, sc.new_score as new_val,
+     select 'score' as kind, sc.old_score::float8 as old_val, sc.new_score::float8 as new_val,
             sc.reason, to_char(sc.changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as changed_at
      from score_changes sc
      where sc.book_id = $1 and sc.reason is not null

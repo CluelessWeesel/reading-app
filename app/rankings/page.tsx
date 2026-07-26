@@ -58,14 +58,12 @@ async function getRankingsData(): Promise<Record<number, YearData>> {
   return byYear;
 }
 
-// The adjustment window's target year is always computeAdjustmentWindow's
-// result -- whether that window is currently open (Dec25-Jan31, live/
-// editable) or already closed (the rest of the year, read-only summary of
-// what was logged). "reason is not null" is what marks a row as an
-// adjustment event rather than a plain rank/score edit (see migration 0025).
-async function getAdjustmentWindowData(today: string): Promise<AdjustmentWindowData> {
-  const { year, isOpen } = computeAdjustmentWindow(today);
-
+// One year's adjustment history -- "reason is not null" is what marks a row
+// as a genuine adjustment event rather than a plain rank/score edit (see
+// migration 0025). isOpen is passed in rather than derived here, since only
+// one year (computeAdjustmentWindow's target) is ever actually open at a
+// time -- every other year calling this is always closed/read-only.
+async function getAdjustmentWindowDataForYear(year: number, isOpen: boolean): Promise<AdjustmentWindowData> {
   const { rows } = await pool.query<{
     kind: "rank" | "score";
     book_id: number;
@@ -75,13 +73,13 @@ async function getAdjustmentWindowData(today: string): Promise<AdjustmentWindowD
     reason: string;
     changed_at: string;
   }>(
-    `select 'rank' as kind, rc.book_id, b.title, rc.old_rank::numeric as old_val, rc.new_rank::numeric as new_val,
+    `select 'rank' as kind, rc.book_id, b.title, rc.old_rank::float8 as old_val, rc.new_rank::float8 as new_val,
             rc.reason, to_char(rc.changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as changed_at
      from rank_changes rc
      join books b on b.book_id = rc.book_id
      where rc.year = $1 and rc.reason is not null
      union all
-     select 'score' as kind, sc.book_id, b.title, sc.old_score as old_val, sc.new_score as new_val,
+     select 'score' as kind, sc.book_id, b.title, sc.old_score::float8 as old_val, sc.new_score::float8 as new_val,
             sc.reason, to_char(sc.changed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as changed_at
      from score_changes sc
      join books b on b.book_id = sc.book_id
@@ -94,9 +92,28 @@ async function getAdjustmentWindowData(today: string): Promise<AdjustmentWindowD
   return { year, isOpen, usedCount, limit: ADJUSTMENT_LIMIT, events: rows as AdjustmentEvent[] };
 }
 
+// One panel's worth of data per year that has actually REACHED its own
+// Dec25-Jan31 window (year <= live.year) -- not every year in YEARS.
+// A year still being actively read (classifyYearEdit's "current" bucket,
+// e.g. this year before its own window has even opened) has no window to
+// show at all, open or closed, and must be left out entirely rather than
+// mislabeled "closed" -- there's a real difference between "this window
+// ran and finished" and "this window hasn't happened yet." Previously only
+// computeAdjustmentWindow's single target year ever got fetched at all, so
+// every other past year's tab had nothing to render regardless of whether
+// it actually had adjustment history logged.
+async function getAdjustmentWindows(today: string): Promise<Record<number, AdjustmentWindowData>> {
+  const live = computeAdjustmentWindow(today);
+  const eligibleYears = YEARS.filter((year) => year <= live.year);
+  const results = await Promise.all(
+    eligibleYears.map((year) => getAdjustmentWindowDataForYear(year, year === live.year && live.isOpen))
+  );
+  return Object.fromEntries(results.map((r) => [r.year, r]));
+}
+
 export default async function RankingsPage() {
   const today = todayLocalIso();
-  const [data, bookHonours, sealedYears, seriesData, mainSeriesData, subSeriesData, adjustmentWindow, holdingCount] =
+  const [data, bookHonours, sealedYears, seriesData, mainSeriesData, subSeriesData, adjustmentWindows, holdingCount] =
     await Promise.all([
       getRankingsData(),
       getAllBookHonours(),
@@ -104,7 +121,7 @@ export default async function RankingsPage() {
       getSeriesRankingsData(SERIES_LIST_NAMES[0]),
       getSeriesRankingsData(SERIES_LIST_NAMES[1]),
       getSeriesRankingsData(SERIES_LIST_NAMES[2]),
-      getAdjustmentWindowData(today),
+      getAdjustmentWindows(today),
       getHoldingCount(),
     ]);
   const currentYear = new Date().getFullYear();
@@ -120,7 +137,7 @@ export default async function RankingsPage() {
       seriesData={seriesData}
       mainSeriesData={mainSeriesData}
       subSeriesData={subSeriesData}
-      adjustmentWindow={adjustmentWindow}
+      adjustmentWindows={adjustmentWindows}
       holdingCount={holdingCount}
     />
   );

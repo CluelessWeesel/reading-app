@@ -122,14 +122,14 @@ export function RankingsView({
   defaultYear,
   bookHonours,
   sealedYears,
-  adjustmentWindow,
+  adjustmentWindows,
 }: {
   data: Record<number, YearData>;
   years: number[];
   defaultYear: number;
   bookHonours: Record<number, HonourItem[]>;
   sealedYears: number[];
-  adjustmentWindow: AdjustmentWindowData;
+  adjustmentWindows: Record<number, AdjustmentWindowData>;
 }) {
   const [dataByYear, setDataByYear] = useState(initialData);
   const [activeYear, setActiveYear] = useState(defaultYear);
@@ -364,7 +364,7 @@ export function RankingsView({
           ))}
         </div>
 
-        {activeYear === adjustmentWindow.year && <AdjustmentWindowPanel data={adjustmentWindow} />}
+        {adjustmentWindows[activeYear] && <AdjustmentWindowPanel data={adjustmentWindows[activeYear]} />}
 
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-ink-warm-faint">
