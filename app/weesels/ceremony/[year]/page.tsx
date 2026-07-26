@@ -4,6 +4,7 @@ import {
   getAllAuthors,
   getAuthorsFirstReadThisYear,
   getCategoryStatuses,
+  getSeriesReadThisYear,
   getWatchlistByCategory,
   getYearFinishedBooks,
 } from "../data";
@@ -21,13 +22,15 @@ export default async function CeremonyPage({ params }: { params: Promise<{ year:
   const sealedYears = await getSealedYears();
   if (sealedYears.has(year)) redirect(`/weesels/${year}`);
 
-  const [categories, yearBooks, authorsFirstReadThisYear, allAuthors, watchlistByCategory] = await Promise.all([
-    getCategories(),
-    getYearFinishedBooks(year),
-    getAuthorsFirstReadThisYear(year),
-    getAllAuthors(),
-    getWatchlistByCategory(year),
-  ]);
+  const [categories, yearBooks, authorsFirstReadThisYear, allAuthors, watchlistByCategory, seriesReadThisYear] =
+    await Promise.all([
+      getCategories(),
+      getYearFinishedBooks(year),
+      getAuthorsFirstReadThisYear(year),
+      getAllAuthors(),
+      getWatchlistByCategory(year),
+      getSeriesReadThisYear(year),
+    ]);
   // The ceremony runs in ascending prestige -- Best Narration (prestige_order
   // 11) first, Author of the Year (prestige_order 1) last -- the opposite of
   // getCategories()'s natural ordering, which every other Weesels surface
@@ -58,6 +61,7 @@ export default async function CeremonyPage({ params }: { params: Promise<{ year:
       categoryData={categoryData}
       yearBooks={yearBooks}
       allAuthors={allAuthors}
+      seriesReadThisYear={seriesReadThisYear}
     />
   );
 }

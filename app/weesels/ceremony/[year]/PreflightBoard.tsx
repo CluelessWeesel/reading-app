@@ -46,12 +46,14 @@ export function PreflightBoard({
   categoryData,
   yearBooks,
   allAuthors,
+  seriesReadThisYear,
   onConfirmed,
 }: {
   year: number;
   categoryData: CeremonyCategoryData[];
   yearBooks: YearFinishedBook[];
   allAuthors: AuthorOption[];
+  seriesReadThisYear: string[];
   onConfirmed: () => void;
 }) {
   const reviewedCount = categoryData.filter((c) => c.status.state !== "unreviewed").length;
@@ -82,6 +84,7 @@ export function PreflightBoard({
                 isManualPick={data.isManualPick}
                 yearBooks={yearBooks}
                 allAuthors={allAuthors}
+                seriesReadThisYear={seriesReadThisYear}
                 onConfirmed={onConfirmed}
               />
             ) : (

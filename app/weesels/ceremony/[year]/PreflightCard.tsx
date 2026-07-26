@@ -87,6 +87,7 @@ export function PreflightCard({
   isManualPick,
   yearBooks,
   allAuthors,
+  seriesReadThisYear,
   onConfirmed,
 }: {
   year: number;
@@ -96,6 +97,7 @@ export function PreflightCard({
   isManualPick: boolean;
   yearBooks: YearFinishedBook[];
   allAuthors: AuthorOption[];
+  seriesReadThisYear: string[];
   onConfirmed: () => void;
 }) {
   const [pool, setPool] = useState<EligibleCandidate[]>(computedPool);
@@ -325,7 +327,7 @@ export function PreflightCard({
             value={manualLabel}
             onChange={(e) => setManualLabel(e.target.value)}
             placeholder={category.name === "Best Series" ? "Series name" : "Author name"}
-            list={`preflight-authors-${category.id}`}
+            list={category.name === "Best Series" ? `preflight-series-${category.id}` : `preflight-authors-${category.id}`}
             className="min-w-0 flex-1 rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
           />
           {category.name === "Best Series" && (
@@ -337,6 +339,13 @@ export function PreflightCard({
               list={`preflight-authors-${category.id}`}
               className="min-w-0 flex-1 rounded-lg border border-gold bg-surface-1 px-2.5 py-1.5 text-sm text-ink-warm"
             />
+          )}
+          {category.name === "Best Series" && (
+            <datalist id={`preflight-series-${category.id}`}>
+              {seriesReadThisYear.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           )}
           <datalist id={`preflight-authors-${category.id}`}>
             {allAuthors.map((a) => (

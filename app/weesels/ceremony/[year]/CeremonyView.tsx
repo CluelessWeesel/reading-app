@@ -21,11 +21,13 @@ export function CeremonyView({
   categoryData,
   yearBooks,
   allAuthors,
+  seriesReadThisYear,
 }: {
   year: number;
   categoryData: CeremonyCategoryData[];
   yearBooks: YearFinishedBook[];
   allAuthors: AuthorOption[];
+  seriesReadThisYear: string[];
 }) {
   const router = useRouter();
   const [viewCategoryId, setViewCategoryId] = useState<number | null>(null);
@@ -59,6 +61,7 @@ export function CeremonyView({
         categoryData={categoryData}
         yearBooks={yearBooks}
         allAuthors={allAuthors}
+        seriesReadThisYear={seriesReadThisYear}
         onConfirmed={refresh}
       />
     );

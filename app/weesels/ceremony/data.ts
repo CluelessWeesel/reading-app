@@ -101,6 +101,23 @@ export async function getAllAuthors(): Promise<AuthorOption[]> {
   return rows;
 }
 
+// Best Series has no eligibility-engine pool (see eligibility.ts's
+// MANUAL_PICK_CATEGORIES comment -- there's no "final entry in series" flag
+// to detect a series actually wrapping up this year), so the datalist that
+// backs its free-text input just needs candidate series names. "Read this
+// year" rather than "finished this year" -- any book from the series
+// closed out in this year is enough to suggest it, same date_finished-year
+// convention as getYearFinishedBooks above.
+export async function getSeriesReadThisYear(year: number): Promise<string[]> {
+  const { rows } = await pool.query<{ series: string }>(
+    `select distinct series from books
+     where series is not null and date_finished is not null and extract(year from date_finished)::int = $1
+     order by series asc`,
+    [year]
+  );
+  return rows.map((r) => r.series);
+}
+
 type WeeselRowWithLookups = {
   id: number;
   category_id: number | null;

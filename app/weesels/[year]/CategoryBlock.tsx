@@ -64,14 +64,23 @@ function NomineeRow({
   const narratorId = creditedNarratorId(row, categoryName);
 
   if (isAuthorIdentityCategory(categoryName)) {
+    // AuthorLink's own root is an inline-flex <a> -- fine when it's the
+    // only thing on its line (the winner block, or nested under a book's
+    // title), but as a bare list item here it behaves like inline text: the
+    // browser packs consecutive nominees onto the same line and only wraps
+    // when it runs out of horizontal room, instead of respecting the
+    // parent's `space-y-3` stacking. Wrapping it in a block div gives each
+    // nominee its own line so that spacing actually applies.
     return (
-      <AuthorLink
-        name={authorName ?? title}
-        authorId={authorId}
-        narratorId={narratorId}
-        photos={photos}
-        narratorPhotos={narratorPhotos}
-      />
+      <div>
+        <AuthorLink
+          name={authorName ?? title}
+          authorId={authorId}
+          narratorId={narratorId}
+          photos={photos}
+          narratorPhotos={narratorPhotos}
+        />
+      </div>
     );
   }
 
@@ -204,7 +213,7 @@ export function CategoryBlock({
       {nominees.length > 0 && (
         <div className="mt-3 border-t border-gold pt-3">
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-warm-faint">Nominees</p>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {nominees.map((n) => (
               <NomineeRow key={n.id} row={n} categoryName={category.name} photos={photos} narratorPhotos={narratorPhotos} />
             ))}
