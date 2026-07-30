@@ -20,6 +20,23 @@ export function computePagesDelta(
   return Math.round(newPosition - basePosition);
 }
 
+// Inverse of computePagesDelta's per-format scaling: converts a pages
+// amount (daily_reading.pages is always stored in pages, regardless of
+// format) back into position units -- percent for audio, pages (i.e.
+// unchanged) for physical/ebook -- so it can be subtracted from a raw
+// position value in logPosition.ts without mixing percent and pages.
+export function pagesToPositionUnits(
+  pages: number,
+  formatType: string | null,
+  pageCount: number | null
+): number {
+  if (formatType === "audio") {
+    if (pageCount == null || pageCount === 0) return 0;
+    return (pages / pageCount) * 100;
+  }
+  return pages;
+}
+
 // The furthest a position can legitimately go: 100 (percent) for audio,
 // or the book's own page_count for physical/ebook. Null means there's
 // nothing to enforce -- a physical/ebook book with no page_count set

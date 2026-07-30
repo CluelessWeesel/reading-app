@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import { computePagesDelta, maxPosition } from "@/app/shared/positionMath";
+import { computePagesDelta, maxPosition, pagesToPositionUnits } from "@/app/shared/positionMath";
 
 export type LogPositionResult =
   | { ok: true; delta: number }
@@ -36,7 +36,10 @@ export async function logForwardProgress(
     [date, bookId]
   );
   const alreadyLoggedToday = todayRows[0]?.pages ?? 0;
-  const baseline = currentPosition - alreadyLoggedToday;
+  // alreadyLoggedToday is always in pages (daily_reading's unit); currentPosition
+  // is in the format's own unit (percent for audio, pages for physical/ebook) --
+  // converting before subtracting avoids mixing percent and pages for audio books.
+  const baseline = currentPosition - pagesToPositionUnits(alreadyLoggedToday, formatType, pageCount);
 
   const delta = computePagesDelta(newPosition, baseline, formatType, pageCount);
   if (delta === null) {
