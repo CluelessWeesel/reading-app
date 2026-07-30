@@ -9,10 +9,20 @@ import type { TbrEntry } from "./types";
 // Deals unpredicted TBR entries one at a time, same house pattern as the
 // tier board's opening FillFlow (fixed full-screen overlay, one card at a
 // time, explicit skip). Shows exactly cover/title/author/genre/length --
-// deliberately nothing else that could bias the call. The queue is just
-// whatever TbrView already had loaded, filtered client-side; skipping is a
-// genuine no-op (unlike FillFlow's "skip" which places into Holding), so a
-// skipped book simply comes back next time "Make some calls" runs.
+// deliberately nothing else that could bias the call. The queue starts as
+// whatever TbrView already had loaded, filtered client-side, then shuffled
+// so calls don't come in the underlying (alphabetical) list order; skipping
+// is a genuine no-op (unlike FillFlow's "skip" which places into Holding),
+// so a skipped book simply comes back next time "Make some calls" runs.
+function shuffled<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export function MakeCallsFlow({
   initialQueue,
   onPredicted,
@@ -22,7 +32,7 @@ export function MakeCallsFlow({
   onPredicted: (entry: TbrEntry) => void;
   onDone: () => void;
 }) {
-  const [queue, setQueue] = useState(initialQueue);
+  const [queue, setQueue] = useState(() => shuffled(initialQueue));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalEligible] = useState(initialQueue.length);

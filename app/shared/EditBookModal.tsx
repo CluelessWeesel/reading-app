@@ -7,7 +7,26 @@ import { FORMAT_LABELS } from "./formatLabels";
 import { todayLocalIso } from "./isoDate";
 import { classifyYearEdit } from "./adjustmentWindow";
 import { EditGuardModal } from "./EditGuardModal";
+import { GatewayPicker, type GatewayValue, type ResolvedGatewayBook } from "./GatewayPicker";
 import type { Book } from "./bookTypes";
+
+function toGatewayValue(book: Book): GatewayValue {
+  return {
+    gateway_book_id: book.gateway_book_id,
+    gateway_person: book.gateway_person ?? "",
+    gateway_source: book.gateway_source ?? "",
+    gateway_note: book.gateway_note ?? "",
+  };
+}
+
+function toResolvedGatewayBook(book: Book): ResolvedGatewayBook | null {
+  if (!book.gateway_book_id || !book.gateway_book_title) return null;
+  return {
+    title: book.gateway_book_title,
+    author: book.gateway_book_author,
+    cover_url: book.gateway_book_cover_url,
+  };
+}
 
 type FormState = {
   title: string;
@@ -141,6 +160,8 @@ export function EditBookModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [gateway, setGateway] = useState<GatewayValue>(() => toGatewayValue(book));
+  const [gatewayTouched, setGatewayTouched] = useState(false);
 
   // A book only carries status='reading' while it's in current_books (set by
   // start-book, cleared by finish/DNF) -- the one reliable signal for "still
@@ -215,6 +236,11 @@ export function EditBookModal({
       isbn: form.isbn.trim() || null,
       status: form.status.trim() || null,
       review: form.review.trim() || null,
+      gateway_book_id: gateway.gateway_book_id,
+      gateway_person: gateway.gateway_person.trim() || null,
+      gateway_source: gateway.gateway_source.trim() || null,
+      gateway_note: gateway.gateway_note.trim() || null,
+      gateway_touched: gatewayTouched,
     };
   }
 
@@ -578,6 +604,17 @@ export function EditBookModal({
                 Reread
               </label>
             </div>
+          </div>
+
+          <div className="border-t border-gold pt-4">
+            <GatewayPicker
+              value={gateway}
+              onChange={(next) => {
+                setGateway(next);
+                setGatewayTouched(true);
+              }}
+              initialBook={toResolvedGatewayBook(book)}
+            />
           </div>
 
           {showReview && (

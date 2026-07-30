@@ -12,10 +12,20 @@ export type TbrEntry = {
   owned_added_at: string | null;
   unowned_added_at: string | null;
   owned: boolean | null;
+  library_uni: boolean;
+  library_other: boolean;
   // Sealed everywhere except the TBR stats panel's "show predictions"
   // toggle -- present on every fetched entry, but the UI must never render
   // these unless that toggle is on. See app/tbr/PredictionEntry.tsx.
   predicted_score: number | null;
   predicted_margin: number | null;
   predicted_at: string | null;
+  gateway_book_id: number | null;
+  gateway_person: string | null;
+  gateway_source: string | null;
+  gateway_note: string | null;
+  gateway_checked_at: string | null;
+  gateway_book_title: string | null;
+  gateway_book_author: string | null;
+  gateway_book_cover_url: string | null;
 };

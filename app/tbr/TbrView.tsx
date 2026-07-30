@@ -134,6 +134,13 @@ function formatLabel(raw: string): string {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
+function libraryLabel(entry: TbrEntry): string | null {
+  if (entry.library_uni && entry.library_other) return "Uni + library";
+  if (entry.library_uni) return "Uni library";
+  if (entry.library_other) return "Library";
+  return null;
+}
+
 export function TbrView({
   entries: initialEntries,
   allGenres,
@@ -154,6 +161,12 @@ export function TbrView({
   const [subgenreFilter, setSubgenreFilter] = useState(ALL);
   const [formatFilter, setFormatFilter] = useState(ALL);
   const [lengthFilter, setLengthFilter] = useState(ALL);
+  // Toggle buttons, not a dropdown -- both off means "no library filter",
+  // either or both on means "show entries borrowable from at least one of
+  // the toggled-on kinds" (an OR, not an AND: turning both on is meant to
+  // widen what you see, not narrow it to library-everywhere books).
+  const [libraryUniFilter, setLibraryUniFilter] = useState(false);
+  const [libraryOtherFilter, setLibraryOtherFilter] = useState(false);
   const [modalTarget, setModalTarget] = useState<TbrEntry | "new" | null>(null);
   const [startBookTarget, setStartBookTarget] = useState<TbrEntry | "generic" | null>(null);
   // Off by default -- sealing only works if looking is a deliberate choice.
@@ -251,15 +264,32 @@ export function TbrView({
       .filter((e) => subgenreFilter === ALL || e.subgenre === subgenreFilter)
       .filter((e) => formatFilter === ALL || e.owned_or_format === formatFilter)
       .filter((e) => lengthFilter === ALL || lengthOf(e.page_count) === lengthFilter)
+      .filter((e) => {
+        if (!libraryUniFilter && !libraryOtherFilter) return true;
+        return (libraryUniFilter && e.library_uni) || (libraryOtherFilter && e.library_other);
+      })
       .sort(SORTS[sortKey].compare);
-  }, [entries, search, shelf, sortKey, genreFilter, subgenreFilter, formatFilter, lengthFilter]);
+  }, [
+    entries,
+    search,
+    shelf,
+    sortKey,
+    genreFilter,
+    subgenreFilter,
+    formatFilter,
+    lengthFilter,
+    libraryUniFilter,
+    libraryOtherFilter,
+  ]);
 
   const filtersActive =
     search.trim() !== "" ||
     genreFilter !== ALL ||
     subgenreFilter !== ALL ||
     formatFilter !== ALL ||
-    lengthFilter !== ALL;
+    lengthFilter !== ALL ||
+    libraryUniFilter ||
+    libraryOtherFilter;
 
   function clearFilters() {
     setSearch("");
@@ -267,6 +297,8 @@ export function TbrView({
     setSubgenreFilter(ALL);
     setFormatFilter(ALL);
     setLengthFilter(ALL);
+    setLibraryUniFilter(false);
+    setLibraryOtherFilter(false);
   }
 
   function handleSaved(entry: TbrEntry) {
@@ -511,6 +543,32 @@ export function TbrView({
               </select>
             </div>
 
+            <div className="flex flex-col gap-1">
+              <span className={labelClass()}>Library</span>
+              <div className="flex gap-1 rounded-full border border-gold bg-surface-1 p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setLibraryUniFilter((v) => !v)}
+                  aria-pressed={libraryUniFilter}
+                  className={`rounded-full px-3 py-1 text-sm transition ${
+                    libraryUniFilter ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
+                  }`}
+                >
+                  Uni
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLibraryOtherFilter((v) => !v)}
+                  aria-pressed={libraryOtherFilter}
+                  className={`rounded-full px-3 py-1 text-sm transition ${
+                    libraryOtherFilter ? "bg-accent text-on-accent" : "text-ink-warm-muted hover:text-ink-warm"
+                  }`}
+                >
+                  Other
+                </button>
+              </div>
+            </div>
+
             {filtersActive && (
               <button
                 type="button"
@@ -558,6 +616,11 @@ export function TbrView({
                     }`}
                   >
                     {entry.owned ? "Owned" : "Unowned"}
+                  </span>
+                )}
+                {libraryLabel(entry) && (
+                  <span className="shrink-0 rounded-full border border-gold-strong px-2 py-0.5 text-xs text-ink-warm-muted">
+                    {libraryLabel(entry)}
                   </span>
                 )}
                 <div className="shrink-0 text-right text-xs text-ink-warm-faint">
@@ -657,6 +720,11 @@ export function TbrView({
                         {entry.predicted_score.toFixed(1)} ±{entry.predicted_margin?.toFixed(1)}
                       </button>
                     )
+                  )}
+                  {libraryLabel(entry) && (
+                    <span className="ml-auto shrink-0 truncate rounded-full border border-gold-strong px-2 py-0.5 text-[10px] text-ink-warm-muted">
+                      {libraryLabel(entry)}
+                    </span>
                   )}
                 </div>
               </div>

@@ -6,19 +6,23 @@ export const dynamic = "force-dynamic";
 
 async function getBooks(): Promise<Book[]> {
   const { rows } = await pool.query<Book>(
-    `select book_id, title, author, author_id::int as author_id, series, genre, subgenre, year_read,
-            year_released, format_raw, format_type, page_count, narrator,
-            reread, isbn, status, cover_url, review, legacy_notes, indie,
-            series_number::float8 as series_number,
-            score::float8 as score,
-            word_count::float8 as word_count,
-            predicted_score::float8 as predicted_score,
-            predicted_margin::float8 as predicted_margin,
-            to_char(date_started, 'YYYY-MM-DD') as date_started,
-            to_char(date_finished, 'YYYY-MM-DD') as date_finished
-     from books
-     where status is distinct from 'reading'
-     order by title asc`
+    `select b.book_id, b.title, b.author, b.author_id::int as author_id, b.series, b.genre, b.subgenre, b.year_read,
+            b.year_released, b.format_raw, b.format_type, b.page_count, b.narrator,
+            b.reread, b.isbn, b.status, b.cover_url, b.review, b.legacy_notes, b.indie,
+            b.series_number::float8 as series_number,
+            b.score::float8 as score,
+            b.word_count::float8 as word_count,
+            b.predicted_score::float8 as predicted_score,
+            b.predicted_margin::float8 as predicted_margin,
+            to_char(b.date_started, 'YYYY-MM-DD') as date_started,
+            to_char(b.date_finished, 'YYYY-MM-DD') as date_finished,
+            b.gateway_book_id, b.gateway_person, b.gateway_source, b.gateway_note,
+            to_char(b.gateway_checked_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as gateway_checked_at,
+            gb.title as gateway_book_title, gb.author as gateway_book_author, gb.cover_url as gateway_book_cover_url
+     from books b
+     left join books gb on gb.book_id = b.gateway_book_id
+     where b.status is distinct from 'reading'
+     order by b.title asc`
   );
   return rows;
 }

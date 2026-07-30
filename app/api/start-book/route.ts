@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { source, tbrId, title, author, format_type, word_count, page_count, date_started } =
+  const { source, tbrId, title, author, genre, subgenre, cover_url, format_type, word_count, page_count, date_started } =
     body as Record<string, unknown>;
 
   if (typeof format_type !== "string" || !FORMAT_TYPES.has(format_type)) {
@@ -59,6 +59,15 @@ export async function POST(request: NextRequest) {
     let predictedScore: number | null = null;
     let predictedMargin: number | null = null;
     let predictedAt: string | null = null;
+    // Carried from the tbr row, same as predicted_*/genre/etc above -- an
+    // answer already given at TBR stage (including a deliberate "found it
+    // myself", which still stamps gateway_checked_at) shouldn't have to be
+    // given again once the book is started.
+    let gatewayBookId: number | null = null;
+    let gatewayPerson: string | null = null;
+    let gatewaySource: string | null = null;
+    let gatewayNote: string | null = null;
+    let gatewayCheckedAt: string | null = null;
 
     if (source === "tbr") {
       tbrIdNum = Number(tbrId);
@@ -69,7 +78,9 @@ export async function POST(request: NextRequest) {
       const { rows } = await client.query(
         `select title, author, genre, subgenre, cover_url, author_id, word_count, page_count,
                 predicted_score::float8 as predicted_score, predicted_margin::float8 as predicted_margin,
-                to_char(predicted_at, 'YYYY-MM-DD"T"HH24:MI:SS') as predicted_at
+                to_char(predicted_at, 'YYYY-MM-DD"T"HH24:MI:SS') as predicted_at,
+                gateway_book_id, gateway_person, gateway_source, gateway_note,
+                to_char(gateway_checked_at, 'YYYY-MM-DD"T"HH24:MI:SS') as gateway_checked_at
          from tbr where id = $1`,
         [tbrIdNum]
       );
@@ -87,12 +98,21 @@ export async function POST(request: NextRequest) {
       predictedScore = rows[0].predicted_score;
       predictedMargin = rows[0].predicted_margin;
       predictedAt = rows[0].predicted_at;
+      gatewayBookId = rows[0].gateway_book_id;
+      gatewayPerson = rows[0].gateway_person;
+      gatewaySource = rows[0].gateway_source;
+      gatewayNote = rows[0].gateway_note;
+      gatewayCheckedAt = rows[0].gateway_checked_at;
     } else {
+      // genre/subgenre/cover_url are only ever populated by the BookCombobox
+      // "search your library" path in StartBookModal (prefilled from an
+      // existing books row); the plain-text manual-entry path never sends
+      // them, same as before.
       bookTitle = (title as string).trim();
       bookAuthor = typeof author === "string" ? author.trim() || null : null;
-      bookGenre = null;
-      bookSubgenre = null;
-      bookCoverUrl = null;
+      bookGenre = typeof genre === "string" ? genre : null;
+      bookSubgenre = typeof subgenre === "string" ? subgenre : null;
+      bookCoverUrl = typeof cover_url === "string" ? cover_url : null;
       bookWordCount = word_count != null ? (word_count as number) : null;
       bookPageCount = page_count != null ? (page_count as number) : null;
     }
@@ -102,8 +122,8 @@ export async function POST(request: NextRequest) {
     const bookAuthorId = await resolveAuthorId(client, bookAuthor);
 
     const { rows: bookRows } = await client.query(
-      `insert into books (title, author, genre, subgenre, cover_url, author_id, format_type, word_count, page_count, status, date_started, reread, predicted_score, predicted_margin, predicted_at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reading', $10, false, $11, $12, $13)
+      `insert into books (title, author, genre, subgenre, cover_url, author_id, format_type, word_count, page_count, status, date_started, reread, predicted_score, predicted_margin, predicted_at, gateway_book_id, gateway_person, gateway_source, gateway_note, gateway_checked_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reading', $10, false, $11, $12, $13, $14, $15, $16, $17, $18)
        returning book_id`,
       [
         bookTitle,
@@ -119,6 +139,11 @@ export async function POST(request: NextRequest) {
         predictedScore,
         predictedMargin,
         predictedAt,
+        gatewayBookId,
+        gatewayPerson,
+        gatewaySource,
+        gatewayNote,
+        gatewayCheckedAt,
       ]
     );
     const bookId = bookRows[0].book_id;
@@ -133,8 +158,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ book_id: bookId, tbr_id_removed: tbrIdNum }, { status: 201 });
   } catch (err) {
     await client.query("ROLLBACK");
-    if (err && typeof err === "object" && "code" in err && err.code === "23503") {
-      return NextResponse.json({ error: "That genre doesn't exist in the genres table." }, { status: 400 });
+    if (err && typeof err === "object" && "code" in err) {
+      if (err.code === "23503") {
+        return NextResponse.json({ error: "That genre doesn't exist in the genres table." }, { status: 400 });
+      }
+      if (err.code === "23514") {
+        return NextResponse.json({ error: "That gateway combination isn't allowed." }, { status: 400 });
+      }
     }
     console.error(err);
     return NextResponse.json({ error: "Failed to start book." }, { status: 500 });

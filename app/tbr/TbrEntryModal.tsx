@@ -3,7 +3,26 @@
 import { useEffect, useState } from "react";
 import { fraunces } from "../shared/fonts";
 import { fieldClass, modalLabelClass } from "../shared/formControls";
+import { GatewayPicker, type GatewayValue, type ResolvedGatewayBook } from "../shared/GatewayPicker";
 import type { TbrEntry } from "./types";
+
+function toGatewayValue(entry: TbrEntry | null): GatewayValue {
+  return {
+    gateway_book_id: entry?.gateway_book_id ?? null,
+    gateway_person: entry?.gateway_person ?? "",
+    gateway_source: entry?.gateway_source ?? "",
+    gateway_note: entry?.gateway_note ?? "",
+  };
+}
+
+function toResolvedGatewayBook(entry: TbrEntry | null): ResolvedGatewayBook | null {
+  if (!entry?.gateway_book_id || !entry.gateway_book_title) return null;
+  return {
+    title: entry.gateway_book_title,
+    author: entry.gateway_book_author,
+    cover_url: entry.gateway_book_cover_url,
+  };
+}
 
 type FormState = {
   title: string;
@@ -14,6 +33,8 @@ type FormState = {
   page_count: string;
   owned_or_format: string;
   owned: "unsorted" | "owned" | "not_owned";
+  library_uni: boolean;
+  library_other: boolean;
 };
 
 function toFormState(entry: TbrEntry | null): FormState {
@@ -27,6 +48,8 @@ function toFormState(entry: TbrEntry | null): FormState {
       page_count: "",
       owned_or_format: "",
       owned: "unsorted",
+      library_uni: false,
+      library_other: false,
     };
   }
   return {
@@ -38,6 +61,8 @@ function toFormState(entry: TbrEntry | null): FormState {
     page_count: entry.page_count != null ? String(entry.page_count) : "",
     owned_or_format: entry.owned_or_format ?? "",
     owned: entry.owned == null ? "unsorted" : entry.owned ? "owned" : "not_owned",
+    library_uni: entry.library_uni,
+    library_other: entry.library_other,
   };
 }
 
@@ -79,6 +104,8 @@ export function TbrEntryModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [gateway, setGateway] = useState<GatewayValue>(() => toGatewayValue(entry));
+  const [gatewayTouched, setGatewayTouched] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -112,6 +139,13 @@ export function TbrEntryModal({
       page_count: form.page_count.trim() ? Number(form.page_count) : null,
       owned_or_format: form.owned_or_format.trim() || null,
       owned: form.owned === "unsorted" ? null : form.owned === "owned",
+      library_uni: form.library_uni,
+      library_other: form.library_other,
+      gateway_book_id: gateway.gateway_book_id,
+      gateway_person: gateway.gateway_person.trim() || null,
+      gateway_source: gateway.gateway_source.trim() || null,
+      gateway_note: gateway.gateway_note.trim() || null,
+      gateway_touched: gatewayTouched,
     };
 
     try {
@@ -295,6 +329,41 @@ export function TbrEntryModal({
                 <option value="not_owned">Not owned</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <span className={modalLabelClass()}>Borrowable from</span>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 text-sm text-ink-warm">
+                <input
+                  type="checkbox"
+                  checked={form.library_uni}
+                  onChange={(e) => set("library_uni", e.target.checked)}
+                  className="accent-accent"
+                />
+                Uni library
+              </label>
+              <label className="flex items-center gap-2 text-sm text-ink-warm">
+                <input
+                  type="checkbox"
+                  checked={form.library_other}
+                  onChange={(e) => set("library_other", e.target.checked)}
+                  className="accent-accent"
+                />
+                Another library
+              </label>
+            </div>
+          </div>
+
+          <div className="border-t border-gold pt-4">
+            <GatewayPicker
+              value={gateway}
+              onChange={(next) => {
+                setGateway(next);
+                setGatewayTouched(true);
+              }}
+              initialBook={toResolvedGatewayBook(entry)}
+            />
           </div>
 
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

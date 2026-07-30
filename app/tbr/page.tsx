@@ -7,14 +7,19 @@ export const dynamic = "force-dynamic";
 
 async function getEntries(): Promise<TbrEntry[]> {
   const { rows } = await pool.query<TbrEntry>(
-    `select id, title, author, owned_or_format, subgenre, genre, word_count, page_count, cover_url, owned,
-            predicted_score::float8 as predicted_score, predicted_margin::float8 as predicted_margin,
-            to_char(created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
-            to_char(owned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as owned_added_at,
-            to_char(unowned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as unowned_added_at,
-            to_char(predicted_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as predicted_at
-     from tbr
-     order by title asc`
+    `select t.id, t.title, t.author, t.owned_or_format, t.subgenre, t.genre, t.word_count, t.page_count, t.cover_url, t.owned,
+            t.library_uni, t.library_other,
+            t.predicted_score::float8 as predicted_score, t.predicted_margin::float8 as predicted_margin,
+            to_char(t.created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
+            to_char(t.owned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as owned_added_at,
+            to_char(t.unowned_added_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as unowned_added_at,
+            to_char(t.predicted_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as predicted_at,
+            t.gateway_book_id, t.gateway_person, t.gateway_source, t.gateway_note,
+            to_char(t.gateway_checked_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as gateway_checked_at,
+            gb.title as gateway_book_title, gb.author as gateway_book_author, gb.cover_url as gateway_book_cover_url
+     from tbr t
+     left join books gb on gb.book_id = t.gateway_book_id
+     order by t.title asc`
   );
   return rows;
 }

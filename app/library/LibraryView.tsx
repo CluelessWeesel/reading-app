@@ -10,6 +10,7 @@ import { CurrentlyReadingPanel } from "../shared/CurrentlyReadingPanel";
 import { fraunces } from "../shared/fonts";
 import { selectClass, labelClass } from "../shared/formControls";
 import { StartBookModal } from "../shared/StartBookModal";
+import { GatewayTriageFlow } from "./GatewayTriageFlow";
 import { titleSortKey } from "../shared/titleSortKey";
 import { authorSortKey } from "../shared/authorSortKey";
 import { daysBetweenInclusive } from "../shared/isoDate";
@@ -235,6 +236,9 @@ export function LibraryView({
   const [view, setView] = useState<ViewMode>("card");
   const [editingBookId, setEditingBookId] = useState<number | null>(null);
   const [showStartBook, setShowStartBook] = useState(false);
+  // Deep-linked from the Gateway Graph's empty-state CTA (/library?trace=1)
+  // so "Trace gateways" doesn't dead-end on a page requiring a second click.
+  const [showTriage, setShowTriage] = useState(() => searchParams.get("trace") === "1");
 
   const genres = useMemo(
     () =>
@@ -319,7 +323,26 @@ export function LibraryView({
     setEditingBookId(null);
   }
 
+  function handleBookTraced(updated: Book) {
+    setBooks((prev) => prev.map((b) => (b.book_id === updated.book_id ? updated : b)));
+  }
+
   const editingBook = books.find((b) => b.book_id === editingBookId) ?? null;
+
+  // Oldest-read first for backfill triage -- gateways are easier to
+  // remember in the order they actually happened. A book with no
+  // date_finished at all (very old data) sorts to the end either way,
+  // rather than jumping to the front.
+  const untracedBooks = useMemo(
+    () =>
+      books.filter((b) => !b.gateway_checked_at).sort((a, b) => {
+        if (!a.date_finished && !b.date_finished) return 0;
+        if (!a.date_finished) return 1;
+        if (!b.date_finished) return -1;
+        return a.date_finished.localeCompare(b.date_finished);
+      }),
+    [books]
+  );
 
   // A book finished via the CurrentlyReadingPanel embedded on this page never
   // came from the server-rendered initialBooks (it was status='reading' at
@@ -361,6 +384,16 @@ export function LibraryView({
             >
               Start a book
             </button>
+
+            {untracedBooks.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowTriage(true)}
+                className="rounded-full border border-gold bg-surface-1 px-4 py-1.5 text-sm text-ink-warm-muted shadow-sm transition hover:bg-surface-2 hover:text-ink-warm"
+              >
+                Trace gateways ({untracedBooks.length})
+              </button>
+            )}
 
             <div className="surface-flat flex gap-1 rounded-full p-1">
               <button
@@ -582,6 +615,14 @@ export function LibraryView({
         <StartBookModal
           onClose={() => setShowStartBook(false)}
           onStarted={() => setShowStartBook(false)}
+        />
+      )}
+
+      {showTriage && (
+        <GatewayTriageFlow
+          initialQueue={untracedBooks}
+          onTraced={handleBookTraced}
+          onDone={() => setShowTriage(false)}
         />
       )}
     </div>

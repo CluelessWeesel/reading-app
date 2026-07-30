@@ -33,4 +33,14 @@ export type Book = {
   predicted_at: string | null;
   legacy_notes: string | null;
   indie: boolean | null;
+  gateway_book_id: number | null;
+  gateway_person: string | null;
+  gateway_source: string | null;
+  gateway_note: string | null;
+  gateway_checked_at: string | null;
+  // Resolved display fields for gateway_book_id -- null unless a gateway
+  // book is actually set, joined in by whichever query populates this Book.
+  gateway_book_title: string | null;
+  gateway_book_author: string | null;
+  gateway_book_cover_url: string | null;
 };

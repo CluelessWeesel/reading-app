@@ -55,6 +55,11 @@ export async function PATCH(
     predicted_margin,
     reason,
     historicalConfirmed,
+    gateway_book_id,
+    gateway_person,
+    gateway_source,
+    gateway_note,
+    gateway_touched,
   } = body as Record<string, unknown>;
 
   if (typeof title !== "string" || !title.trim()) {
@@ -122,6 +127,25 @@ export async function PATCH(
   ) {
     return NextResponse.json({ error: "Date finished can't be before date started." }, { status: 400 });
   }
+  if (gateway_book_id != null && (!isFiniteNumber(gateway_book_id) || !Number.isInteger(gateway_book_id))) {
+    return NextResponse.json({ error: "Gateway book id must be a whole number, or omitted." }, { status: 400 });
+  }
+  if (gateway_person != null && (typeof gateway_person !== "string" || !gateway_person.trim())) {
+    return NextResponse.json({ error: "Gateway person must be a non-empty string, or omitted." }, { status: 400 });
+  }
+  if (gateway_source != null && (typeof gateway_source !== "string" || !gateway_source.trim())) {
+    return NextResponse.json({ error: "Gateway source must be a non-empty string, or omitted." }, { status: 400 });
+  }
+  if (gateway_note != null && (typeof gateway_note !== "string" || !gateway_note.trim())) {
+    return NextResponse.json({ error: "Gateway note must be a non-empty string, or omitted." }, { status: 400 });
+  }
+  const gatewayFieldsSet = [gateway_book_id, gateway_person, gateway_source].filter((v) => v != null).length;
+  if (gatewayFieldsSet > 1) {
+    return NextResponse.json(
+      { error: "A gateway can be a book, a person, or a source -- only one at a time." },
+      { status: 400 }
+    );
+  }
 
   const authorVal = typeof author === "string" ? author.trim() || null : null;
   const genreVal = typeof genre === "string" ? genre.trim() || null : null;
@@ -135,6 +159,11 @@ export async function PATCH(
   const dateStartedVal = typeof date_started === "string" ? date_started || null : null;
   const dateFinishedVal = typeof date_finished === "string" ? date_finished || null : null;
   const reviewVal = typeof review === "string" ? review.trim() || null : null;
+  const gatewayBookIdVal = typeof gateway_book_id === "number" ? gateway_book_id : null;
+  const gatewayPersonVal = typeof gateway_person === "string" ? gateway_person.trim() || null : null;
+  const gatewaySourceVal = typeof gateway_source === "string" ? gateway_source.trim() || null : null;
+  const gatewayNoteVal = typeof gateway_note === "string" ? gateway_note.trim() || null : null;
+  const gatewayTouched = gateway_touched === true;
 
   const client = await pool.connect();
   try {
@@ -194,25 +223,32 @@ export async function PATCH(
     const authorIdVal = await resolveAuthorId(client, authorVal);
 
     const { rows, rowCount } = await client.query(
-      `update books set
+      `update books as b set
          title = $1, author = $2, series = $3, series_number = $4, genre = $5,
          year_released = $6, year_read = $7, score = $8, format_raw = $9,
          format_type = $10, word_count = $11, page_count = $12, narrator = $13,
          reread = $14, date_started = $15, date_finished = $16, isbn = $17, status = $18,
          review = $19, subgenre = $20, predicted_score = $21, predicted_margin = $22,
-         author_id = $23
-       where book_id = $24
+         author_id = $23, gateway_book_id = $24, gateway_person = $25, gateway_source = $26,
+         gateway_note = $27,
+         gateway_checked_at = case when $28 then coalesce(b.gateway_checked_at, now()) else b.gateway_checked_at end
+       where b.book_id = $29
        returning
-         book_id, title, author, series, genre, subgenre, year_released, year_read,
-         format_raw, format_type, page_count, narrator, reread, isbn, status, cover_url,
-         review, legacy_notes,
-         series_number::float8 as series_number,
-         score::float8 as score,
-         word_count::float8 as word_count,
-         predicted_score::float8 as predicted_score,
-         predicted_margin::float8 as predicted_margin,
-         to_char(date_started, 'YYYY-MM-DD') as date_started,
-         to_char(date_finished, 'YYYY-MM-DD') as date_finished`,
+         b.book_id, b.title, b.author, b.series, b.genre, b.subgenre, b.year_released, b.year_read,
+         b.format_raw, b.format_type, b.page_count, b.narrator, b.reread, b.isbn, b.status, b.cover_url,
+         b.review, b.legacy_notes,
+         b.series_number::float8 as series_number,
+         b.score::float8 as score,
+         b.word_count::float8 as word_count,
+         b.predicted_score::float8 as predicted_score,
+         b.predicted_margin::float8 as predicted_margin,
+         to_char(b.date_started, 'YYYY-MM-DD') as date_started,
+         to_char(b.date_finished, 'YYYY-MM-DD') as date_finished,
+         b.gateway_book_id, b.gateway_person, b.gateway_source, b.gateway_note,
+         to_char(b.gateway_checked_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as gateway_checked_at,
+         (select gb.title from books gb where gb.book_id = b.gateway_book_id) as gateway_book_title,
+         (select gb.author from books gb where gb.book_id = b.gateway_book_id) as gateway_book_author,
+         (select gb.cover_url from books gb where gb.book_id = b.gateway_book_id) as gateway_book_cover_url`,
       [
         title.trim(),
         authorVal,
@@ -237,6 +273,11 @@ export async function PATCH(
         predicted_score ?? null,
         predicted_margin ?? null,
         authorIdVal,
+        gatewayBookIdVal,
+        gatewayPersonVal,
+        gatewaySourceVal,
+        gatewayNoteVal,
+        gatewayTouched,
         bookIdNum,
       ]
     );
@@ -259,8 +300,19 @@ export async function PATCH(
     return NextResponse.json(rows[0]);
   } catch (err) {
     await client.query("ROLLBACK");
-    if (err && typeof err === "object" && "code" in err && err.code === "23503") {
-      return NextResponse.json({ error: "That genre doesn't exist in the genres table." }, { status: 400 });
+    if (err && typeof err === "object" && "code" in err) {
+      if (err.code === "23503") {
+        return NextResponse.json({ error: "That genre doesn't exist in the genres table." }, { status: 400 });
+      }
+      // P0001 is check_gateway_book_acyclic()'s own RAISE EXCEPTION (see
+      // 0031_gateway_tracking.sql) -- its message is already written to be
+      // read directly by a human, unlike a raw constraint violation.
+      if (err.code === "P0001" && "message" in err && typeof err.message === "string") {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      if (err.code === "23514") {
+        return NextResponse.json({ error: "That gateway combination isn't allowed." }, { status: 400 });
+      }
     }
     console.error(err);
     return NextResponse.json({ error: "Save failed." }, { status: 500 });

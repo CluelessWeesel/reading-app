@@ -1,18 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { fraunces } from "./fonts";
 import { fieldClass, modalLabelClass } from "./formControls";
 import { todayLocalIso } from "./isoDate";
-import { titleSortKey } from "./titleSortKey";
+import { BookCombobox } from "./BookCombobox";
+import { CoverThumb } from "./CoverThumb";
 
 type TbrOption = {
   id: number;
   title: string;
   author: string | null;
   genre: string | null;
+  cover_url: string | null;
   word_count: number | null;
   page_count: number | null;
+};
+
+// Matches /api/books/picker's response shape -- used to search the
+// already-read library from "New title" mode, so a reread doesn't have to
+// be retyped from scratch.
+type LibraryOption = {
+  id: number;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
+  genre: string | null;
+  subgenre: string | null;
+  word_count: number | null;
+  page_count: number | null;
+  last_activity: string | null;
 };
 
 const FORMAT_OPTIONS = [
@@ -34,9 +51,10 @@ export function StartBookModal({
 }) {
   const [mode, setMode] = useState<"tbr" | "new">("tbr");
   const [tbrOptions, setTbrOptions] = useState<TbrOption[] | null>(null);
-  const [search, setSearch] = useState("");
   const [selectedTbr, setSelectedTbr] = useState<TbrOption | null>(initialTbrEntry);
 
+  const [newEntryMode, setNewEntryMode] = useState<"search" | "manual">("search");
+  const [matchedBook, setMatchedBook] = useState<LibraryOption | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [newAuthor, setNewAuthor] = useState("");
 
@@ -67,17 +85,16 @@ export function StartBookModal({
       .catch(() => setError("Couldn't load your TBR list."));
   }, [mode, initialTbrEntry, tbrOptions]);
 
-  const filteredTbr = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return (tbrOptions ?? [])
-      .filter((t) => !q || t.title.toLowerCase().includes(q) || (t.author ?? "").toLowerCase().includes(q))
-      .sort((a, b) => titleSortKey(a.title).localeCompare(titleSortKey(b.title)));
-  }, [tbrOptions, search]);
-
   function selectTbr(entry: TbrOption) {
     setSelectedTbr(entry);
     setWordCount(entry.word_count != null ? String(entry.word_count) : "");
     setPageCount(entry.page_count != null ? String(entry.page_count) : "");
+  }
+
+  function selectMatchedBook(book: LibraryOption) {
+    setMatchedBook(book);
+    setWordCount(book.word_count != null ? String(book.word_count) : "");
+    setPageCount(book.page_count != null ? String(book.page_count) : "");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -96,7 +113,11 @@ export function StartBookModal({
       setError("Pick a TBR entry, or switch to typing a new title.");
       return;
     }
-    if (mode === "new" && !newTitle.trim()) {
+    if (mode === "new" && newEntryMode === "search" && !matchedBook) {
+      setError("Pick a book, or switch to typing a new title.");
+      return;
+    }
+    if (mode === "new" && newEntryMode === "manual" && !newTitle.trim()) {
       setError("Title is required.");
       return;
     }
@@ -112,15 +133,28 @@ export function StartBookModal({
             page_count: pageCount.trim() ? Number(pageCount) : null,
             date_started: todayLocalIso(),
           }
-        : {
-            source: "new",
-            title: newTitle.trim(),
-            author: newAuthor.trim() || null,
-            format_type: formatType,
-            word_count: wordCount.trim() ? Number(wordCount) : null,
-            page_count: pageCount.trim() ? Number(pageCount) : null,
-            date_started: todayLocalIso(),
-          };
+        : newEntryMode === "search"
+          ? {
+              source: "new",
+              title: matchedBook!.title,
+              author: matchedBook!.author,
+              genre: matchedBook!.genre,
+              subgenre: matchedBook!.subgenre,
+              cover_url: matchedBook!.cover_url,
+              format_type: formatType,
+              word_count: wordCount.trim() ? Number(wordCount) : null,
+              page_count: pageCount.trim() ? Number(pageCount) : null,
+              date_started: todayLocalIso(),
+            }
+          : {
+              source: "new",
+              title: newTitle.trim(),
+              author: newAuthor.trim() || null,
+              format_type: formatType,
+              word_count: wordCount.trim() ? Number(wordCount) : null,
+              page_count: pageCount.trim() ? Number(pageCount) : null,
+              date_started: todayLocalIso(),
+            };
 
     try {
       const res = await fetch("/api/start-book", {
@@ -215,37 +249,52 @@ export function StartBookModal({
                     </button>
                   )}
                 </div>
+              ) : tbrOptions === null ? (
+                <p className="p-3 text-sm text-ink-warm-faint">Loading...</p>
               ) : (
-                <>
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search your TBR..."
-                    className={fieldClass()}
-                    autoFocus
-                  />
-                  <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-gold">
-                    {tbrOptions === null ? (
-                      <p className="p-3 text-sm text-ink-warm-faint">Loading...</p>
-                    ) : filteredTbr.length === 0 ? (
-                      <p className="p-3 text-sm text-ink-warm-faint">No matches.</p>
-                    ) : (
-                      filteredTbr.slice(0, 30).map((entry) => (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          onClick={() => selectTbr(entry)}
-                          className="block w-full border-b border-gold px-3 py-2 text-left text-sm last:border-0 hover:bg-hover"
-                        >
-                          <span className="font-medium text-ink-warm">{entry.title}</span>
-                          {entry.author && <span className="text-ink-warm-faint"> — {entry.author}</span>}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </>
+                <BookCombobox<TbrOption>
+                  items={tbrOptions}
+                  onSelect={selectTbr}
+                  placeholder="Search your TBR..."
+                  autoFocus
+                />
               )}
+            </div>
+          ) : matchedBook ? (
+            <div>
+              <label className={modalLabelClass()}>Title</label>
+              <div className="flex items-center justify-between rounded-lg border border-gold bg-surface-1 px-3 py-2 text-sm">
+                <div className="flex items-center gap-3">
+                  <CoverThumb title={matchedBook.title} coverUrl={matchedBook.cover_url} className="aspect-[2/3] w-10" />
+                  <div>
+                    <p className="font-medium text-ink-warm">{matchedBook.title}</p>
+                    {matchedBook.author && <p className="text-xs text-ink-warm-faint">{matchedBook.author}</p>}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMatchedBook(null)}
+                  className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          ) : newEntryMode === "search" ? (
+            <div>
+              <label className={modalLabelClass()}>Title</label>
+              <BookCombobox<LibraryOption>
+                onSelect={selectMatchedBook}
+                placeholder="Search your library..."
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setNewEntryMode("manual")}
+                className="mt-2 text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+              >
+                Can&apos;t find it? Type a new title instead
+              </button>
             </div>
           ) : (
             <>
@@ -268,6 +317,13 @@ export function StartBookModal({
                   onChange={(e) => setNewAuthor(e.target.value)}
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => setNewEntryMode("search")}
+                className="text-xs text-ink-warm-faint underline decoration-dotted underline-offset-4 hover:text-ink-warm"
+              >
+                Search your library instead
+              </button>
             </>
           )}
 
