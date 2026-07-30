@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { resolveAuthorId } from "@/app/shared/resolveAuthorId";
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
@@ -96,14 +97,21 @@ export async function POST(request: NextRequest) {
   const gatewayTouched = gateway_touched === true;
 
   try {
+    // author_id must be resolved on this write path, not just inherited
+    // from books' EditBookModal/start-book flow -- otherwise a TBR entry
+    // added straight from /tbr (the common case) never gets linked, and
+    // silently never shows up on the author's page (its Queued strip
+    // filters on tbr.author_id) despite the free-text author matching.
+    const authorIdVal = await resolveAuthorId(pool, authorVal);
+
     const { rows } = await pool.query(
-      `insert into tbr as t (title, author, genre, subgenre, word_count, page_count, owned_or_format, owned,
+      `insert into tbr as t (title, author, author_id, genre, subgenre, word_count, page_count, owned_or_format, owned,
          owned_added_at, unowned_added_at, gateway_book_id, gateway_person, gateway_source, gateway_note,
          gateway_checked_at, library_uni, library_other)
-       values ($1, $2, $3, $4, $5, $6, $7, $8,
-         case when $8 = true then now() else null end,
-         case when $8 = false then now() else null end,
-         $9, $10, $11, $12, case when $13 then now() else null end, $14, $15)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9,
+         case when $9 = true then now() else null end,
+         case when $9 = false then now() else null end,
+         $10, $11, $12, $13, case when $14 then now() else null end, $15, $16)
        returning t.id, t.title, t.author, t.genre, t.subgenre, t.word_count, t.page_count, t.owned_or_format,
          t.cover_url, t.owned, t.library_uni, t.library_other,
          to_char(t.created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
@@ -117,6 +125,7 @@ export async function POST(request: NextRequest) {
       [
         title.trim(),
         authorVal,
+        authorIdVal,
         genreVal,
         subgenreVal,
         word_count ?? null,

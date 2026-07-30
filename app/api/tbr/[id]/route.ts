@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { resolveAuthorId } from "@/app/shared/resolveAuthorId";
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
@@ -113,6 +114,12 @@ export async function PATCH(
     const stampOwnedAddedAt = nextOwned === true && previousOwned !== true;
     const stampUnownedAddedAt = nextOwned === false && previousOwned !== false;
 
+    // Re-resolved fresh from the author name on every save (same reasoning
+    // as start-book's comment on this) rather than left alone -- otherwise
+    // an entry added before this fix, or whose author name gets corrected,
+    // stays unlinked and invisible on its author's page forever.
+    const authorIdVal = await resolveAuthorId(client, authorVal);
+
     const { rows } = await client.query(
       `update tbr as t set title = $1, author = $2, genre = $3, subgenre = $4, word_count = $5, owned_or_format = $6,
          page_count = $7, owned = $8,
@@ -120,8 +127,8 @@ export async function PATCH(
          unowned_added_at = case when $10 then now() else t.unowned_added_at end,
          gateway_book_id = $11, gateway_person = $12, gateway_source = $13, gateway_note = $14,
          gateway_checked_at = case when $15 then coalesce(t.gateway_checked_at, now()) else t.gateway_checked_at end,
-         library_uni = $16, library_other = $17
-       where t.id = $18
+         library_uni = $16, library_other = $17, author_id = $18
+       where t.id = $19
        returning t.id, t.title, t.author, t.genre, t.subgenre, t.word_count, t.page_count, t.owned_or_format,
          t.cover_url, t.owned, t.library_uni, t.library_other,
          to_char(t.created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
@@ -150,6 +157,7 @@ export async function PATCH(
         gatewayTouched,
         libraryUniVal,
         libraryOtherVal,
+        authorIdVal,
         idNum,
       ]
     );
