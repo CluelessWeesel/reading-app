@@ -17,6 +17,7 @@ async function getAuthors(): Promise<AuthorSummary[]> {
      from authors a
      left join books b on b.author_id = a.id and b.date_finished is not null
      group by a.id, a.name, a.photo_url
+     having count(b.book_id) > 0
      order by a.name asc`
   );
   return rows;
