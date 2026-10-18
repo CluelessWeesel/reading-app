@@ -139,6 +139,7 @@ export function GatewayTriageFlow({
               onChange={setGateway}
               onFoundItMyself={saveFoundItMyself}
               foundItMyselfDisabled={saving}
+              selfBookId={current.book_id}
             />
 
             {error && <p className="mt-3 text-sm text-red-300">{error}</p>}

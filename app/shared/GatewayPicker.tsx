@@ -41,6 +41,7 @@ export function GatewayPicker({
   initialBook = null,
   onFoundItMyself,
   foundItMyselfDisabled = false,
+  selfBookId,
 }: {
   value: GatewayValue;
   onChange: (next: GatewayValue) => void;
@@ -53,6 +54,9 @@ export function GatewayPicker({
   // a genuine no-op with zero visible feedback.
   onFoundItMyself?: () => void;
   foundItMyselfDisabled?: boolean;
+  // The book whose gateway is being edited, if it's already a real book --
+  // kept out of the search so it can't be picked as its own gateway.
+  selfBookId?: number;
 }) {
   const [mode, setMode] = useState<Mode>(() => initialModeFor(value));
   const [pickedBook, setPickedBook] = useState<ResolvedGatewayBook | null>(initialBook);
@@ -134,7 +138,7 @@ export function GatewayPicker({
             </button>
           </div>
         ) : (
-          <BookCombobox onSelect={selectBook} placeholder="Search your library..." />
+          <BookCombobox onSelect={selectBook} placeholder="Search your library..." excludeIds={selfBookId != null ? [selfBookId] : undefined} />
         ))}
 
       {mode === "person" && (

@@ -5,7 +5,24 @@ import type { Bloodline, GatewayGraphSummary } from "./math";
 // constant relocates every already-manually-placed book relative to
 // whatever X it was dragged to, which can reintroduce overlaps the user
 // had already dragged apart -- treat a change here with the same care as
-// an irreversible migration. 2015-01-01 is a round date safely before the
+// an irreversible migration. The only safe way to retune it is a uniform
+// stretch: multiply PX_PER_SQRT_DAY by k AND, in the same change, multiply
+// every stored vertical value by the same k (gateway_node_placement.y and
+// book_graph_placement.edge_control_dy) -- the picture keeps its exact
+// shape, just taller. (Since 0035, edge_control2_dy is a stored vertical
+// value too and gets the same treatment.) Was 40 until it was stretched x2.5 to 100.
+//
+// Then two piecewise tweaks around PIVOT_DATE (2023-01-01), each applied
+// together with a one-off remap of every stored vertical value (avatar y,
+// bend control-point / S-curve handle y) through the same Y -> Y function:
+// - Before it, squashed to COMPRESS_FACTOR of its height (2020-2022 has
+//   only a handful of books).
+// - From it on, linear instead of sqrt, so every year gets the same height
+//   (~338px) instead of each year shrinking. The slope is the sqrt curve's
+//   own slope AT the pivot -- its steepest point in that range -- so the
+//   switch only ever stretched gaps, never shrank one (no new overlaps).
+//   Done in late 2026, when 2023-2026 rows were 327/311/295/283px.
+// Any future change: same rule -- remap stored vertical values with it. 2015-01-01 is a round date safely before the
 // real earliest date_finished in the data (2020-01-22 as of writing).
 //
 // Deliberately NOT layoutBloodlinesChronologically's sqrt-warp (math.ts) --
@@ -16,15 +33,27 @@ import type { Bloodline, GatewayGraphSummary } from "./math";
 // overlaps a user had manually dragged apart. This is a different,
 // absolute transform solving a different problem, not a risk-averse copy.
 const EPOCH_MS = Date.parse("2015-01-01T00:00:00Z");
-const PX_PER_SQRT_DAY = 40;
+const PX_PER_SQRT_DAY = 100;
 
 function daysSinceEpoch(dateIso: string): number {
   return (Date.parse(`${dateIso}T00:00:00Z`) - EPOCH_MS) / 86_400_000;
 }
 
+function rawDateToY(dateIso: string): number {
+  return Math.sqrt(Math.max(0, daysSinceEpoch(dateIso))) * PX_PER_SQRT_DAY;
+}
+
+const PIVOT_DATE = "2023-01-01";
+const PIVOT_DAYS = daysSinceEpoch(PIVOT_DATE);
+const PIVOT_Y = rawDateToY(PIVOT_DATE);
+const COMPRESS_FACTOR = 0.3;
+// d/d(days) of sqrt(days) * PX_PER_SQRT_DAY, evaluated at the pivot.
+const PX_PER_DAY_AFTER_PIVOT = PX_PER_SQRT_DAY / (2 * Math.sqrt(PIVOT_DAYS));
+
 export function dateToY(dateIso: string): number {
-  const days = Math.max(0, daysSinceEpoch(dateIso));
-  return Math.sqrt(days) * PX_PER_SQRT_DAY;
+  const days = daysSinceEpoch(dateIso);
+  if (days >= PIVOT_DAYS) return PIVOT_Y + (days - PIVOT_DAYS) * PX_PER_DAY_AFTER_PIVOT;
+  return PIVOT_Y - (PIVOT_Y - rawDateToY(dateIso)) * COMPRESS_FACTOR;
 }
 
 // A book's own date_finished if it has one; otherwise (a currently-reading
@@ -64,6 +93,9 @@ export type BookPlacementRow = {
   edge_curved: boolean;
   edge_control_dx: number | null;
   edge_control_dy: number | null;
+  // Present only for a double curve (0035_gateway_edge_double_curve.sql).
+  edge_control2_dx: number | null;
+  edge_control2_dy: number | null;
 };
 export type NodePlacementRow = { node_key: string; x: number; y: number };
 
@@ -93,6 +125,8 @@ export type ArrangedEdge = {
   curved: boolean;
   controlDx: number | null;
   controlDy: number | null;
+  control2Dx: number | null;
+  control2Dy: number | null;
 };
 
 export type TrayBook = {
@@ -186,6 +220,8 @@ export function computeArrangedGraph(
         curved: placement.edge_curved,
         controlDx: placement.edge_control_dx,
         controlDy: placement.edge_control_dy,
+        control2Dx: placement.edge_control2_dx,
+        control2Dy: placement.edge_control2_dy,
       });
     }
   }

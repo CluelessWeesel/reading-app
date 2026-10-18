@@ -36,11 +36,16 @@ export function BookCombobox<T extends BookComboboxItem>({
   onSelect,
   placeholder = "Search your library...",
   autoFocus,
+  excludeIds,
 }: {
   items?: T[];
   onSelect: (item: T) => void;
   placeholder?: string;
   autoFocus?: boolean;
+  // Ids never offered as a result -- e.g. a book's own gateway picker
+  // must not list the book itself (the DB's acyclic trigger would reject
+  // it, and with same-series covers side by side it's an easy mis-tap).
+  excludeIds?: number[];
 }) {
   const [fetchedItems, setFetchedItems] = useState<T[] | null>(null);
   const [query, setQuery] = useState("");
@@ -60,7 +65,8 @@ export function BookCombobox<T extends BookComboboxItem>({
   const loading = usingOwnFetch && fetchedItems === null;
 
   const results = useMemo(() => {
-    const pool = items ?? fetchedItems ?? EMPTY_ITEMS;
+    const all = items ?? fetchedItems ?? EMPTY_ITEMS;
+    const pool = excludeIds && excludeIds.length > 0 ? all.filter((item) => !excludeIds.includes(item.id)) : all;
     const normalizedQuery = normalizeTitle(query);
     if (!normalizedQuery) {
       return [...pool]
@@ -75,7 +81,7 @@ export function BookCombobox<T extends BookComboboxItem>({
           (item.author ?? "").toLowerCase().includes(looseQuery)
       )
       .slice(0, MAX_RESULTS);
-  }, [items, fetchedItems, query]);
+  }, [items, fetchedItems, query, excludeIds]);
 
   function handleQueryChange(value: string) {
     setQuery(value);

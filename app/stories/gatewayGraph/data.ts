@@ -30,7 +30,8 @@ export async function getGatewayGraphTbrRows(): Promise<TbrGatewayRow[]> {
 export async function getBookGraphPlacements(): Promise<BookPlacementRow[]> {
   const { rows } = await pool.query<BookPlacementRow>(
     `select book_id, x::float8 as x, edge_curved,
-            edge_control_dx::float8 as edge_control_dx, edge_control_dy::float8 as edge_control_dy
+            edge_control_dx::float8 as edge_control_dx, edge_control_dy::float8 as edge_control_dy,
+            edge_control2_dx::float8 as edge_control2_dx, edge_control2_dy::float8 as edge_control2_dy
      from book_graph_placement`
   );
   return rows;

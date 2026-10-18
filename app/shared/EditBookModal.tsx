@@ -614,6 +614,7 @@ export function EditBookModal({
                 setGatewayTouched(true);
               }}
               initialBook={toResolvedGatewayBook(book)}
+              selfBookId={book.book_id}
             />
           </div>
 
