@@ -1,5 +1,5 @@
 import { pool } from "@/lib/db";
-import { getGatewayGraphRows, getGatewayGraphTbrRows } from "./gatewayGraph/data";
+import { getGatewayGraphRows, getGatewayGraphTbrRows, getBookGraphPlacements, getGatewayNodePlacements } from "./gatewayGraph/data";
 import { GatewayGraphView } from "./gatewayGraph/GatewayGraphView";
 import { StoriesSection, type StoryListRow } from "./StoriesSection";
 import { StoriesTabs } from "./StoriesTabs";
@@ -18,10 +18,12 @@ async function getStories(): Promise<StoryListRow[]> {
 }
 
 export default async function StoriesPage() {
-  const [stories, gatewayRows, gatewayTbrRows] = await Promise.all([
+  const [stories, gatewayRows, gatewayTbrRows, bookPlacements, nodePlacements] = await Promise.all([
     getStories(),
     getGatewayGraphRows(),
     getGatewayGraphTbrRows(),
+    getBookGraphPlacements(),
+    getGatewayNodePlacements(),
   ]);
 
   return (
@@ -29,7 +31,14 @@ export default async function StoriesPage() {
       <div className="mx-auto max-w-5xl">
         <StoriesTabs
           stories={<StoriesSection stories={stories} />}
-          graph={<GatewayGraphView rows={gatewayRows} tbrRows={gatewayTbrRows} />}
+          graph={
+            <GatewayGraphView
+              rows={gatewayRows}
+              tbrRows={gatewayTbrRows}
+              bookPlacements={bookPlacements}
+              nodePlacements={nodePlacements}
+            />
+          }
         />
       </div>
     </div>

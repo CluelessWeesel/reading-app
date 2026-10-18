@@ -641,7 +641,7 @@ export default async function HomePage() {
         />
 
         <OdometerBand
-          totalBooks={lifetimeData.booksFinished}
+          totalBooks={totalBooksAllTime}
           totalPages={Math.round(lifetimeData.totalPages)}
           totalWords={Math.round(lifetimeData.totalWordsEstimate)}
         />

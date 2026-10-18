@@ -1,17 +1,17 @@
 import { daysBetweenInclusive } from "../shared/isoDate";
 import type { WidgetAccent } from "./widgets/WidgetCard";
 
-export type GenreSlice = { genre: string; count: number; percent: number; accent: WidgetAccent };
+export type GenreSlice = { genre: string; count: number; percent: number; accent: WidgetAccent | "other" };
 
 export type GenreDiet = { slices: GenreSlice[]; diagnosis: string };
 
-const SLICE_ACCENTS: WidgetAccent[] = ["blue", "purple", "green", "teal", "amber"];
+const SLICE_ACCENTS: WidgetAccent[] = ["blue", "purple", "green", "teal", "pink", "amber", "coral", "violet"];
+const MAX_SLICES = 8;
 
-// Top 5 genres by book count within the window, as proportions of the
-// window's total (a 6th-and-beyond "other" bucket isn't shown separately
-// -- the bar is a read on your dominant genres, not a complete
-// accounting). Returns null with fewer than 2 distinct genres, since a
-// "diet" isn't meaningful with only one food group.
+// Top 8 genres by book count within the window, as proportions of the
+// window's total, plus a 9th-and-beyond "Other" bucket so the bar always
+// accounts for 100%. Returns null with fewer than 2 distinct genres, since
+// a "diet" isn't meaningful with only one food group.
 export function computeGenreDiet(books: { genre: string | null; date_finished: string | null }[], cutoff: string): GenreDiet | null {
   const counts = new Map<string, number>();
   for (const b of books) {
@@ -22,14 +22,20 @@ export function computeGenreDiet(books: { genre: string | null; date_finished: s
 
   const total = Array.from(counts.values()).reduce((s, n) => s + n, 0);
   const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-  const top5 = sorted.slice(0, 5);
+  const top = sorted.slice(0, MAX_SLICES);
+  const rest = sorted.slice(MAX_SLICES);
 
-  const slices: GenreSlice[] = top5.map(([genre, count], i) => ({
+  const slices: GenreSlice[] = top.map(([genre, count], i) => ({
     genre,
     count,
     percent: (count / total) * 100,
     accent: SLICE_ACCENTS[i],
   }));
+
+  if (rest.length > 0) {
+    const otherCount = rest.reduce((s, [, n]) => s + n, 0);
+    slices.push({ genre: "Other", count: otherCount, percent: (otherCount / total) * 100, accent: "other" });
+  }
 
   const [topGenre, topCount] = sorted[0];
   const topShare = topCount / total;

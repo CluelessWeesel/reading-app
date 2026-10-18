@@ -98,6 +98,12 @@ export type GatewayGraphSummary = {
   orphanStats: { count: number; longestStandingLabel: string | null };
 };
 
+// Shared by both layout axes below (structural depth/leaf-order in
+// buildBloodline, and calendar time in layoutBloodlinesChronologically) so
+// a node at either extreme always has room for its own half-width/height
+// within whatever box ends up rendering it.
+const EDGE_MARGIN = 0.08;
+
 function bookKey(id: number): string {
   return `book:${id}`;
 }
@@ -485,8 +491,15 @@ function buildBloodline(
   assignX(rootKey, 0);
 
   const totalLeaves = Math.max(leafCounter, 1);
-  const toFrac = (x: number) => (totalLeaves <= 1 ? 0.5 : x / (totalLeaves - 1));
-  const toY = (key: string) => (maxDepth === 0 ? 0.5 : depthOf.get(key)! / maxDepth);
+  // Inset away from the literal 0/1 extremes -- nodes render centered on
+  // their coordinate (translate(-50%,-50%)), so a node sitting exactly at
+  // an edge has half its box (and, for the focused variant, its label)
+  // outside the container. Edge overflow in the "outward" direction is at
+  // least reachable by scrolling; overflow above/left of a 0 coordinate
+  // never is, since you can't scroll to a negative offset -- so top row
+  // and leftmost/rightmost leaves were getting silently clipped.
+  const toFrac = (x: number) => (totalLeaves <= 1 ? 0.5 : EDGE_MARGIN + (x / (totalLeaves - 1)) * (1 - 2 * EDGE_MARGIN));
+  const toY = (key: string) => (maxDepth === 0 ? 0.5 : EDGE_MARGIN + (depthOf.get(key)! / maxDepth) * (1 - 2 * EDGE_MARGIN));
 
   const layoutNodes: LayoutNode[] = [];
   const layoutEdges: LayoutEdge[] = [];
@@ -572,7 +585,7 @@ export function layoutBloodlinesChronologically(bloodlines: Bloodline[]): Chrono
   }
   const totalWarped = cum || 1;
 
-  function warpedFractionMs(t: number): number {
+  function rawWarpedFraction(t: number): number {
     if (t <= breakpoints[0].t) return 0;
     const last = breakpoints[breakpoints.length - 1];
     if (t >= last.t) return 1;
@@ -587,7 +600,14 @@ export function layoutBloodlinesChronologically(bloodlines: Bloodline[]): Chrono
     return 1;
   }
 
-  const globalY = (t: number) => warpedFractionMs(t);
+  // Same edge-margin inset as buildBloodline's toFrac/toY -- without it,
+  // the single earliest and single latest dated node in the whole tree
+  // (every bloodline's own extremes are stretched onto this one shared
+  // calendar) would sit exactly at the top/bottom edge of the scroll
+  // canvas, same unreachable-negative-scroll clipping.
+  function warpedFractionMs(t: number): number {
+    return EDGE_MARGIN + rawWarpedFraction(t) * (1 - 2 * EDGE_MARGIN);
+  }
 
   const remapped = bloodlines.map((b) => {
     const byKey = new Map(b.nodes.map((n) => [n.node.key, n]));
@@ -608,10 +628,42 @@ export function layoutBloodlinesChronologically(bloodlines: Bloodline[]): Chrono
       return best;
     }
 
+    // A person/source root has no date of its own -- it inherits its
+    // earliest descendant's date outright (see earliestDescendantDate
+    // above). For a bloodline with only one dated leaf, that makes the
+    // root's y EXACTLY equal to that leaf's y -- and since a single-leaf
+    // bloodline also collapses both to the same x (buildBloodline's
+    // "totalLeaves<=1 ? 0.5" branch), root and child land on the literal
+    // same point and render on top of each other (the root avatar hidden
+    // behind the book cover, just a sliver peeking out). Nudging every
+    // root a fixed number of warped units earlier keeps it visually
+    // separated from what it led to at every zoom level: in
+    // WholeTreeByDate, node size and warped-units-to-pixels both scale by
+    // the same zoom factor, so a fixed unit count (not a fixed pixel
+    // amount) stays proportionally correct regardless of zoom. 15 units
+    // ~= that file's BASE_NODE_SIZE(200) / BASE_PX_PER_WARPED_UNIT(14) --
+    // keep the two in sync if either constant changes there.
+    // Applied to the RAW (pre-edge-margin) fraction, not the already-
+    // margined warpedFractionMs() output -- subtracting after EDGE_MARGIN was
+    // applied could push a root that started near the protected top edge
+    // straight through it down to the literal 0 floor, destroying the
+    // very margin that keeps its label from being clipped by the
+    // unreachable-negative-scroll boundary. Subtracting first and THEN
+    // applying the same EDGE_MARGIN scaling guarantees the result can
+    // never fall below EDGE_MARGIN, no matter how large the nudge is.
+    const ROOT_LEAD_UNITS = 15;
+    const rootLeadRawFraction = ROOT_LEAD_UNITS / totalWarped;
+
     const yOf = new Map<string, number>();
     for (const n of b.nodes) {
       const t = earliestDescendantDate(n.node.key);
-      yOf.set(n.node.key, t != null ? globalY(t) : n.y);
+      if (t == null) {
+        yOf.set(n.node.key, n.y);
+        continue;
+      }
+      const rawFrac = rawWarpedFraction(t);
+      const adjustedRaw = n.node.kind === "book" ? rawFrac : Math.max(0, rawFrac - rootLeadRawFraction);
+      yOf.set(n.node.key, EDGE_MARGIN + adjustedRaw * (1 - 2 * EDGE_MARGIN));
     }
 
     return {

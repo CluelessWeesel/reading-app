@@ -13,6 +13,10 @@ const BASE_NODE_SIZE = 200; // was 40 (x5)
 const BASE_PX_PER_LEAF = ((BASE_NODE_SIZE * 2) / 3) * 1.2;
 const BASE_LANE_GAP = BASE_NODE_SIZE * 0.5; // same 0.5x-of-node-size ratio as the old 20/40
 const ZOOM_STEPS = [0.2, 0.35, 0.6, 0.8, 1, 1.25, 1.5, 2, 2.5];
+// Fixed-size text (text-[11px], not zoom-scaled like nodes are), so this
+// stays a flat pixel reserve regardless of zoom -- covers the label's own
+// line height plus its pb-1 gap above the root avatar.
+const LABEL_RESERVE_PX = 24;
 
 export function WholeTreeByDate({ bloodlines, onClose }: { bloodlines: Bloodline[]; onClose: () => void }) {
   const [fullscreen, setFullscreen] = useState(false);
@@ -41,17 +45,34 @@ export function WholeTreeByDate({ bloodlines, onClose }: { bloodlines: Bloodline
   const pxPerLeaf = BASE_PX_PER_LEAF * zoom;
   const laneGap = BASE_LANE_GAP * zoom;
   const nodeSize = BASE_NODE_SIZE * zoom;
+  // EDGE_MARGIN (in math.ts) only ever reserved room for a node's own
+  // half-size -- never for the root label floating above it on top of
+  // that. At low zoom, `height` sits on its 500px floor while the label's
+  // text stays a fixed 11px, so that margin can be barely enough for the
+  // avatar alone and leave nothing for the label (confirmed: it wasn't).
+  // Reserving real pixel space here, on top of the existing height rather
+  // than inside it, guarantees the room exists regardless of zoom or how
+  // short the dataset's date range is.
+  const topInsetPx = nodeSize / 2 + LABEL_RESERVE_PX;
 
   const lanes = useMemo(
     () =>
       dated.reduce<{ bloodline: Bloodline; x0: number; width: number; rootY: number }[]>((acc, b) => {
-        const width = Math.max(80 * zoom, b.leafCount * pxPerLeaf);
+        // leafCount * pxPerLeaf alone sizes a lane for its *book* covers
+        // only (nodeSize * 2/3 wide each, see BloodlineTree's boxSize) --
+        // but the root avatar renders at the full nodeSize, noticeably
+        // wider than a book. For a sparse lane (most acutely leafCount===1,
+        // where this floor is the only term that can ever win) that left
+        // the root avatar wider than its own lane by a fixed proportion,
+        // at every zoom level -- zooming in/out scales both numbers
+        // together, so it never actually fixed itself.
+        const width = Math.max(80 * zoom, nodeSize * 1.2, b.leafCount * pxPerLeaf);
         const rootY = b.nodes.find((n) => n.node.key === b.rootKey)?.y ?? 0;
         const prevEnd = acc.length > 0 ? acc[acc.length - 1].x0 + acc[acc.length - 1].width + laneGap : 0;
         acc.push({ bloodline: b, x0: prevEnd, width, rootY });
         return acc;
       }, []),
-    [dated, pxPerLeaf, laneGap, zoom]
+    [dated, pxPerLeaf, laneGap, zoom, nodeSize]
   );
 
   const totalWidth = lanes.length > 0 ? lanes[lanes.length - 1].x0 + lanes[lanes.length - 1].width : 0;
@@ -170,14 +191,14 @@ export function WholeTreeByDate({ bloodlines, onClose }: { bloodlines: Bloodline
               stay put while the track (and everything sticky inside it)
               scrolled away with the rest of the grid. Plain relative
               width here instead of a grid gives it room to actually stick. */}
-          <div className="relative" style={{ width: 64 + totalWidth, height }}>
+          <div className="relative" style={{ width: 64 + totalWidth, height: height + topInsetPx }}>
             <div className="sticky left-0 z-10 h-full w-16 bg-surface-1">
               <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gold-strong" />
               {yearTicks.map((t) => (
                 <div
                   key={t.year}
                   className="absolute left-0 right-0 flex -translate-y-1/2 flex-col items-center"
-                  style={{ top: `${t.frac * 100}%` }}
+                  style={{ top: topInsetPx + t.frac * height }}
                 >
                   <span className="h-2.5 w-2.5 rounded-full bg-gold-ink shadow-[0_0_0_4px_var(--surface-1)]" />
                   <span className="mt-1 text-xs font-bold text-ink-warm-muted">{t.year}</span>
@@ -185,7 +206,7 @@ export function WholeTreeByDate({ bloodlines, onClose }: { bloodlines: Bloodline
               ))}
             </div>
 
-            <div className="absolute top-0" style={{ left: 64, width: totalWidth, height }}>
+            <div className="absolute" style={{ left: 64, top: topInsetPx, width: totalWidth, height }}>
               {yearTicks.map((t) => (
                 <div
                   key={t.year}
@@ -195,9 +216,17 @@ export function WholeTreeByDate({ bloodlines, onClose }: { bloodlines: Bloodline
               ))}
               {lanes.map(({ bloodline: b, x0, width, rootY }) => (
                 <div key={b.rootKey} className="absolute top-0" style={{ left: x0, width, height }}>
+                  {/* rootY% is the root's CENTER (BloodlineTree centers every
+                      node on its coordinate via translate(-50%,-50%)), not
+                      its top edge -- positioning the label flush at rootY%
+                      put its bottom edge on the circle's center, so the
+                      avatar's own top half (painted after this span in the
+                      DOM) covered the label's bottom half. Subtract the
+                      node's own half-height, in real pixels, to actually
+                      clear its top edge. */}
                   <span
-                    className="absolute left-1/2 -translate-x-1/2 -translate-y-full whitespace-nowrap pb-1 text-[11px] text-ink-warm-faint"
-                    style={{ top: `${rootY * 100}%` }}
+                    className="absolute left-1/2 -translate-x-1/2 -translate-y-full truncate pb-1 text-[11px] text-ink-warm-faint"
+                    style={{ top: rootY * height - nodeSize / 2, maxWidth: width }}
                   >
                     <b className="text-ink-warm">{b.rootLabel}</b> · {b.size}
                   </span>

@@ -10,10 +10,12 @@ export function BloodlineGrid({
   summary,
   onFocus,
   onOpenWholeDate,
+  onOpenArrange,
 }: {
   summary: GatewayGraphSummary;
   onFocus: (rootKey: string) => void;
   onOpenWholeDate: () => void;
+  onOpenArrange: () => void;
 }) {
   const [orphansOpen, setOrphansOpen] = useState(false);
 
@@ -27,13 +29,22 @@ export function BloodlineGrid({
             focus it. Orphans held quietly below.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onOpenWholeDate}
-          className="shrink-0 whitespace-nowrap rounded-full border border-gold-strong bg-surface-2 px-3.5 py-1.5 text-xs text-ink-warm-muted transition hover:bg-gold-ink hover:text-white"
-        >
-          ↕ See the whole tree, by date
-        </button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onOpenWholeDate}
+            className="whitespace-nowrap rounded-full border border-gold-strong bg-surface-2 px-3.5 py-1.5 text-xs text-ink-warm-muted transition hover:bg-gold-ink hover:text-white"
+          >
+            ↕ See the whole tree, by date
+          </button>
+          <button
+            type="button"
+            onClick={onOpenArrange}
+            className="whitespace-nowrap rounded-full border border-gold-strong bg-surface-2 px-3.5 py-1.5 text-xs text-ink-warm-muted transition hover:bg-gold-ink hover:text-white"
+          >
+            ✋ Arrange the tree
+          </button>
+        </div>
       </div>
 
       {summary.bloodlines.length === 0 ? (
@@ -53,7 +64,7 @@ export function BloodlineGrid({
                 <span className="truncate text-sm font-bold text-ink-warm">{b.rootLabel}</span>
                 <span className="shrink-0 text-xs text-ink-warm-faint">{b.size} books</span>
               </div>
-              <div className="relative h-[170px] overflow-hidden">
+              <div className="relative h-[170px] overflow-hidden p-2">
                 <BloodlineTree bloodline={b} variant="preview" mode="static" />
               </div>
             </button>

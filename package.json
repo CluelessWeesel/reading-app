@@ -18,7 +18,8 @@
     "backfill:weesels": "tsx scripts/backfill-weesels.ts",
     "backfill:tbr-date-added": "tsx scripts/backfill-tbr-date-added.ts",
     "backfill:recaps": "tsx scripts/backfill-recaps.ts",
-    "backfill:wrapped": "tsx scripts/backfill-wrapped.ts"
+    "backfill:wrapped": "tsx scripts/backfill-wrapped.ts",
+    "seed:gateway-tree-placement": "tsx scripts/seed-gateway-tree-placement.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

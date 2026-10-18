@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import type { GenreDiet, IdleGenreFact } from "../genreDietMath";
+import type { GenreDiet, GenreSlice, IdleGenreFact } from "../genreDietMath";
 
 type Window = "3" | "6" | "12";
 
 const WINDOW_LABELS: Record<Window, string> = { "3": "3mo", "6": "6mo", "12": "12mo" };
+
+function sliceColor(accent: GenreSlice["accent"]): string {
+  return accent === "other" ? "var(--ink-warm-faint)" : `var(--accent-${accent})`;
+}
 
 // The interactive leaf: window toggle + hover state for the proportion
 // bar/legend/caption. Split out from GenreDietWidget so that component can
@@ -55,7 +59,7 @@ export function GenreDietBar({
                 className="cursor-default transition-[filter] duration-150"
                 style={{
                   width: `${s.percent}%`,
-                  backgroundColor: `var(--accent-${s.accent})`,
+                  backgroundColor: sliceColor(s.accent),
                   filter: hovered && hovered !== s.genre ? "brightness(0.6)" : undefined,
                 }}
               />
@@ -71,7 +75,7 @@ export function GenreDietBar({
                 onFocus={() => setHovered(s.genre)}
                 className="flex items-center gap-1 text-[11px]"
               >
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: `var(--accent-${s.accent})` }} />
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: sliceColor(s.accent) }} />
                 <span className={s.genre === hovered ? "text-ink-warm" : "text-ink-warm-faint"}>{s.genre}</span>
               </button>
             ))}

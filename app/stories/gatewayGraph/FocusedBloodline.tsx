@@ -117,7 +117,7 @@ export function FocusedBloodline({ bloodline, onBack }: { bloodline: Bloodline; 
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-paper px-4 py-4 sm:px-8 sm:py-6">
         {headerRow}
-        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gold bg-surface-2 px-3 py-5">{canvas}</div>
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gold bg-surface-2 px-5 py-5">{canvas}</div>
         {caption}
       </div>
     );
@@ -134,7 +134,7 @@ export function FocusedBloodline({ bloodline, onBack }: { bloodline: Bloodline; 
           browser, same bug). A genuinely bounded scroll box has no such
           ambiguity -- wheel input over it always scrolls it, in whichever
           direction there's room, same as any normal scrollable panel. */}
-      <div className="max-h-[70vh] overflow-auto rounded-xl border border-gold bg-surface-2 px-3 py-5">{canvas}</div>
+      <div className="max-h-[70vh] overflow-auto rounded-xl border border-gold bg-surface-2 px-5 py-5">{canvas}</div>
       {caption}
     </div>
   );

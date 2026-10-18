@@ -33,7 +33,7 @@ export function CurrentlyReadingPanel() {
   const [subgenreOptions, setSubgenreOptions] = useState<string[]>([]);
   const [metadataError, setMetadataError] = useState(false);
   const [editingBookId, setEditingBookId] = useState<number | null>(null);
-  const [finishingBookId, setFinishingBookId] = useState<number | null>(null);
+  const [finishingBook, setFinishingBook] = useState<CurrentBook | null>(null);
 
   function loadMetadata() {
     setMetadataError(false);
@@ -120,7 +120,6 @@ export function CurrentlyReadingPanel() {
   }
 
   const editingBook = books?.find((b) => b.book_id === editingBookId) ?? null;
-  const finishingBook = books?.find((b) => b.book_id === finishingBookId) ?? null;
 
   if (books === null || books.length === 0) return null;
 
@@ -200,7 +199,7 @@ export function CurrentlyReadingPanel() {
 
               <button
                 type="button"
-                onClick={() => setFinishingBookId(book.book_id)}
+                onClick={() => setFinishingBook(book)}
                 className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-on-accent shadow-sm transition hover:brightness-95"
               >
                 Finish
@@ -248,7 +247,7 @@ export function CurrentlyReadingPanel() {
       {finishingBook && (
         <FinishBookCeremony
           book={finishingBook}
-          onClose={() => setFinishingBookId(null)}
+          onClose={() => setFinishingBook(null)}
           onFinished={refresh}
         />
       )}

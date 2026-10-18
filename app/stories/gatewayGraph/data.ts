@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db";
 import type { GatewayBookRow, TbrGatewayRow } from "./math";
+import type { BookPlacementRow, NodePlacementRow } from "./arrangeMath";
 
 export async function getGatewayGraphRows(): Promise<GatewayBookRow[]> {
   const { rows } = await pool.query<GatewayBookRow>(
@@ -22,6 +23,22 @@ export async function getGatewayGraphTbrRows(): Promise<TbrGatewayRow[]> {
             gateway_book_id, gateway_person, gateway_source
      from tbr
      where gateway_book_id is not null or gateway_person is not null or gateway_source is not null`
+  );
+  return rows;
+}
+
+export async function getBookGraphPlacements(): Promise<BookPlacementRow[]> {
+  const { rows } = await pool.query<BookPlacementRow>(
+    `select book_id, x::float8 as x, edge_curved,
+            edge_control_dx::float8 as edge_control_dx, edge_control_dy::float8 as edge_control_dy
+     from book_graph_placement`
+  );
+  return rows;
+}
+
+export async function getGatewayNodePlacements(): Promise<NodePlacementRow[]> {
+  const { rows } = await pool.query<NodePlacementRow>(
+    `select node_key, x::float8 as x, y::float8 as y from gateway_node_placement`
   );
   return rows;
 }

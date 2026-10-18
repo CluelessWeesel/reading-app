@@ -5,14 +5,26 @@ import { useMemo, useState } from "react";
 import { fraunces } from "../../shared/fonts";
 import { CoverThumb } from "../../shared/CoverThumb";
 import { computeGatewayGraph, type GatewayBookRow, type TbrGatewayRow } from "./math";
+import type { BookPlacementRow, NodePlacementRow } from "./arrangeMath";
+import { ArrangeTree } from "./ArrangeTree";
 import { BloodlineGrid } from "./BloodlineGrid";
 import { FocusedBloodline } from "./FocusedBloodline";
 import { StatsPanel } from "./StatsPanel";
 import { WholeTreeByDate } from "./WholeTreeByDate";
 
-type View = { kind: "grid" } | { kind: "focused"; rootKey: string } | { kind: "wholeDate" };
+type View = { kind: "grid" } | { kind: "focused"; rootKey: string } | { kind: "wholeDate" } | { kind: "arrange" };
 
-export function GatewayGraphView({ rows, tbrRows }: { rows: GatewayBookRow[]; tbrRows: TbrGatewayRow[] }) {
+export function GatewayGraphView({
+  rows,
+  tbrRows,
+  bookPlacements,
+  nodePlacements,
+}: {
+  rows: GatewayBookRow[];
+  tbrRows: TbrGatewayRow[];
+  bookPlacements: BookPlacementRow[];
+  nodePlacements: NodePlacementRow[];
+}) {
   const summary = useMemo(() => computeGatewayGraph(rows, tbrRows), [rows, tbrRows]);
   const [view, setView] = useState<View>({ kind: "grid" });
 
@@ -31,6 +43,13 @@ export function GatewayGraphView({ rows, tbrRows }: { rows: GatewayBookRow[]; tb
         </div>
       ) : view.kind === "wholeDate" ? (
         <WholeTreeByDate bloodlines={summary.bloodlines} onClose={() => setView({ kind: "grid" })} />
+      ) : view.kind === "arrange" ? (
+        <ArrangeTree
+          summary={summary}
+          bookPlacements={bookPlacements}
+          nodePlacements={nodePlacements}
+          onBack={() => setView({ kind: "grid" })}
+        />
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[1fr_320px]">
           <div className="min-w-0 rounded-2xl border border-gold bg-surface-1 p-5 shadow-sm">
@@ -41,6 +60,7 @@ export function GatewayGraphView({ rows, tbrRows }: { rows: GatewayBookRow[]; tb
                 summary={summary}
                 onFocus={(rootKey) => setView({ kind: "focused", rootKey })}
                 onOpenWholeDate={() => setView({ kind: "wholeDate" })}
+                onOpenArrange={() => setView({ kind: "arrange" })}
               />
             )}
           </div>

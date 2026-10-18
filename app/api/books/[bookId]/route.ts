@@ -4,6 +4,7 @@ import { todayLocalIso } from "@/app/shared/isoDate";
 import { classifyYearEdit } from "@/app/shared/adjustmentWindow";
 import { ADJUSTMENT_LIMIT, getAdjustmentUsedBookIds } from "@/app/shared/adjustmentBudget";
 import { resolveAuthorId } from "@/app/shared/resolveAuthorId";
+import { resolveNarrators } from "@/app/shared/resolveNarrators";
 
 const FORMAT_TYPES = new Set(["audio", "physical", "ebook"]);
 
@@ -295,6 +296,8 @@ export async function PATCH(
         [bookIdNum, currentRows[0].year_read, oldScore, newScoreVal, classification === "adjustment" ? reasonVal : null]
       );
     }
+
+    await resolveNarrators(client, bookIdNum, narratorVal);
 
     await client.query("COMMIT");
     return NextResponse.json(rows[0]);
