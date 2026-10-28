@@ -18,12 +18,12 @@ export function capacityFor(percent: number, totalPlacedBooks: number): number {
   return Math.ceil((percent / 100) * totalPlacedBooks);
 }
 
-// Includes Holding -- kept for FillFlow.tsx's one-time opening-fill
-// ceremony (already completed, historical), which needs "every book that's
-// entered the board at all, capped tier or not" as its progress-bar/
-// capacity denominator. Steady-state capacity math should use
-// totalJudgedFromBoard below instead -- see its own comment for why.
-export function totalPlacedFromBoard(board: TierBoardData): number {
+// Counts every book on the board, Holding included. Holding books are
+// waiting for a slot, and if they were left out the board could never grow,
+// because a tier only gains a slot when the total goes up, and the total
+// only goes up when a book is placed in a full tier. Counting them means
+// each book you read opens its share of new slots straight away.
+export function totalJudgedFromBoard(board: TierBoardData): number {
   return ALL_TIERS.reduce((sum, tier) => sum + board[tier].length, 0);
 }
 
