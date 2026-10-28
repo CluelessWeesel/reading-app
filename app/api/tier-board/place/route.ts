@@ -39,13 +39,13 @@ async function getSettings(client: PoolClient): Promise<{ fillCompleted: boolean
   return { fillCompleted: map.tier_fill_completed === "true", capacities };
 }
 
-// Judged (non-Holding) book_tiers rows -- the same total the board's own
-// display uses (see totalJudgedFromBoard), so enforcement here can never
-// disagree with what's on screen. Only queried when a capacity check is
-// actually needed.
+// Every book_tiers row, Holding included. This must match
+// totalJudgedFromBoard in tierMath.ts, which also counts Holding, so the
+// server never disagrees with what the board shows on screen. Only queried
+// when a capacity check is actually needed.
 async function getTotalPlaced(client: PoolClient): Promise<number> {
   const { rows } = await client.query<{ n: number }>(
-    `select count(*)::int as n from book_tiers where tier != 'holding'`
+    `select count(*)::int as n from book_tiers`
   );
   return rows[0].n;
 }
