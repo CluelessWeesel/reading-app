@@ -56,9 +56,39 @@ async function getAllSeriesBookStats(): Promise<Map<string, SeriesStats>> {
   return new Map(rows.map((r) => [r.series, { books_read: r.books_read, score_sum: r.score_sum, score_count: r.score_count }]));
 }
 
+// Adds a row to this list for every series in the books table that has no
+// parent in the series table and isn't ranked yet. New rows go at the
+// bottom as Not Complete. Series with a parent are left for manual adding.
+async function addMissingSeries(listName: SeriesListName): Promise<void> {
+  await pool.query(
+    `insert into series_rankings (list_name, rank, series, status_flag)
+     select $1::text,
+            (select coalesce(max(rank), 0) from series_rankings where list_name = $1::text)
+              + row_number() over (order by s.series),
+            s.series,
+            'Not Complete'
+     from (
+       select distinct series from books
+       where series is not null and trim(series) <> ''
+     ) s
+     where not exists (
+             select 1 from series_rankings r
+             where r.list_name = $1::text and r.series = s.series
+           )
+       and not exists (
+             select 1 from series p
+             where p.series = s.series
+               and coalesce(trim(p.parent_series), '') <> ''
+           )`,
+    [listName]
+  );
+}
+
 // "Books read" excludes in-progress reads, matching the convention already
 // used for library counts (app/library/page.tsx).
 export async function getSeriesRankingsData(listName: SeriesListName): Promise<SeriesRankedRow[]> {
+  await addMissingSeries(listName);
+
   const { rows } = await pool.query<{ rank: number; series: string; status_flag: StatusFlag }>(
     `select rank, series, status_flag from series_rankings where list_name = $1 order by rank asc`,
     [listName]
