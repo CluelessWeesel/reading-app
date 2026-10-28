@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db";
 import type { SeriesListName, SeriesRankedRow, StatusFlag } from "./types";
+import { SERIES_LIST_NAMES } from "./types";
 
 // A book is tagged with the specific sub-series it belongs to (e.g. "The
 // Hobbit" -> "Middle Earth" directly, but the LOTR trilogy -> "Lord of the
@@ -56,10 +57,16 @@ async function getAllSeriesBookStats(): Promise<Map<string, SeriesStats>> {
   return new Map(rows.map((r) => [r.series, { books_read: r.books_read, score_sum: r.score_sum, score_count: r.score_count }]));
 }
 
+// Series that should never be added automatically, in any list.
+const IGNORED_SERIES = ["Westeros"];
+
 // Adds a row to this list for every series in the books table that has no
 // parent in the series table and isn't ranked yet. New rows go at the
 // bottom as Not Complete. Series with a parent are left for manual adding.
+// The Sub list also skips any series that is itself a parent of other
+// series, since those belong in Main only.
 async function addMissingSeries(listName: SeriesListName): Promise<void> {
+  const isSubList = listName === SERIES_LIST_NAMES[2];
   await pool.query(
     `insert into series_rankings (list_name, rank, series, status_flag)
      select $1::text,
@@ -79,8 +86,12 @@ async function addMissingSeries(listName: SeriesListName): Promise<void> {
              select 1 from series p
              where p.series = s.series
                and coalesce(trim(p.parent_series), '') <> ''
-           )`,
-    [listName]
+           )
+       and s.series <> all($3::text[])
+       and ($2::boolean = false or not exists (
+             select 1 from series c where c.parent_series = s.series
+           ))`,
+    [listName, isSubList, IGNORED_SERIES]
   );
 }
 
