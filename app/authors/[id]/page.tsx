@@ -91,8 +91,9 @@ async function getRankByPages(authorId: number, totalPages: number): Promise<{ r
   const { rows } = await pool.query<{ id: number; total_pages: number }>(
     `select a.id::int as id, coalesce(sum(b.page_count), 0)::int as total_pages
      from authors a
-     left join books b on b.author_id = a.id and b.date_finished is not null
-     group by a.id`
+     join books b on b.author_id = a.id and b.date_finished is not null
+     group by a.id
+     having count(b.book_id) > 0`
   );
   const sorted = [...rows].sort((a, b) => b.total_pages - a.total_pages);
   const rank = totalPages > 0 ? sorted.findIndex((r) => r.id === authorId) + 1 : null;
